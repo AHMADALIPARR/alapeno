@@ -172,10 +172,10 @@ module Tile
   (* 2^126. Extreme magnitude of a signed 64x64 product. *)
   function prod_abs_max : int = 85070591730234615865843651857942052864
 
-  (* K * 2^126 fits in signed 256 for every K <= 2^129 - 1.
-     This tile has K = 4. Legal accelerator K is at most 64.
-     No signed-64 stimulus at those K values can raise the overflow fault. *)
-  predicate tile_k4_cannot_overflow =
+  (* K = 4 only. Each signed-64 product has absolute value at most
+     prod_abs_max = 2^126, so a length-4 sum lies in [-4*2^126, 4*2^126]
+     = [-2^128, 2^128], which is inside signed 256. This does not claim K = 64. *)
+  lemma tile_k4_cannot_overflow:
     tile_k = 4 /\
     tile_k <= 64 /\
     tile_k * prod_abs_max <= max_i256 /\
