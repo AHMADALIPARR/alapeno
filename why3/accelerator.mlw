@@ -1,4 +1,4 @@
-(* Why3 1.8.0 loaded this file. No proof is claimed except dot'vc, route_dot'vc, and field_route_dot'vc, which the tool printed as Valid. *)
+(* Why3 1.8.0 loaded this file. Goals dot'vc, route_dot'vc, field_route_dot'vc, and failed_txn_does_not_publish were printed Valid. No other proof is claimed. *)
 (* SPDX-License-Identifier: AGPL-3.0-only *)
 (* Copyright (C) 2026 Alapeno contributors *)
 (* The grant is AGPL-3.0-only and there is no MIT license. *)
@@ -153,5 +153,20 @@ module Accelerator
     requires { in_i64 (pr + (proj + (e - pr))) }
     ensures { exists pr2 : int. project_step e pr proj result pr2 }
     ensures { proj = 0 -> result = e - pr }
+
+
+  (* A failed transaction does not publish. fault = 1 leaves every
+     destination byte of C at its old value and leaves done at 0. *)
+  function publish_c (fault : int) (old_c new_c : int -> int) (a : int) : int =
+    if fault = 1 then old_c a else new_c a
+
+  function publish_done (fault : int) : int =
+    if fault = 1 then 0 else 1
+
+  lemma failed_txn_does_not_publish:
+    forall fault : int, old_c new_c : int -> int, a : int.
+      fault = 1 ->
+      publish_c fault old_c new_c a = old_c a /\
+      publish_done fault = 0
 
 end

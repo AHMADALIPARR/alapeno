@@ -1,4 +1,4 @@
-(* Why3 1.8.0 loaded this file. No proof is claimed except step_byte'vc, which the tool printed as Valid. *)
+(* Why3 1.8.0 loaded this file. Goals step_byte'vc, port_a_wins_same_byte, and dma_abort_keeps_prefix were printed Valid. No other proof is claimed. *)
 (* SPDX-License-Identifier: AGPL-3.0-only *)
 (* Copyright (C) 2026 Alapeno contributors *)
 (* The grant is AGPL-3.0-only and there is no MIT license. *)
@@ -104,5 +104,53 @@ module Memory
     requires { accel_busy = 0 }
     requires { dma_stays_in_sram src dst len }
     ensures { result = 1 }
+
+
+  (* Same-byte, same-cycle merge. Port A wins. The read is write-first.
+     A collision sets sticky conflict bit 3 in both STATUS registers. *)
+  function merge_byte (a_writes b_writes a_data b_data prev_byte : int) : int =
+    if a_writes = 1 then a_data
+    else if b_writes = 1 then b_data
+    else prev_byte
+
+  function same_cycle_read (stored : int) : int = stored
+
+  function accel_status_bit3 (a_writes b_writes prev : int) : int =
+    if a_writes = 1 /\ b_writes = 1 then 1 else prev
+
+  function dma_status_bit3 (a_writes b_writes prev : int) : int =
+    if a_writes = 1 /\ b_writes = 1 then 1 else prev
+
+  lemma port_a_wins_same_byte:
+    forall a_data b_data prev_byte prev_accel prev_dma : int.
+      merge_byte 1 1 a_data b_data prev_byte = a_data /\
+      same_cycle_read (merge_byte 1 1 a_data b_data prev_byte) = a_data /\
+      accel_status_bit3 1 1 prev_accel = 1 /\
+      dma_status_bit3 1 1 prev_dma = 1
+
+  (* Abort is not a rollback. The result is the ascending copy of the
+     first `committed` bytes (step_byte). Every other byte stays at its old value. *)
+  function dma_abort_byte (before : int -> int) (src dst committed a : int) : int =
+    if dst <= a /\ a < dst + committed
+    then step_byte before src dst committed a
+    else before a
+
+  lemma dma_abort_keeps_prefix:
+    (forall before : int -> int, src dst committed a : int.
+      0 <= committed ->
+      (dst <= a /\ a < dst + committed ->
+        dma_abort_byte before src dst committed a =
+          step_byte before src dst committed a) /\
+      (a < dst \/ a >= dst + committed ->
+        dma_abort_byte before src dst committed a = before a)) /\
+    (forall before : int -> int.
+      let src = sram_lo in
+      let dst = sram_lo + 64 in
+      step_byte before src dst 2 dst = before src /\
+      step_byte before src dst 2 (dst + 1) = before (src + 1) /\
+      dma_abort_byte before src dst 2 dst = before src /\
+      dma_abort_byte before src dst 2 (dst + 1) = before (src + 1) /\
+      dma_abort_byte before src dst 2 (dst + 2) = before (dst + 2) /\
+      dma_abort_byte before src dst 2 (dst + 3) = before (dst + 3))
 
 end

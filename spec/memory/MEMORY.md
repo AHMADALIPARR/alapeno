@@ -58,7 +58,7 @@ SRAM is synchronous and byte-addressed.
 
 Port A is the scalar core. Port B is the accelerator and the DMA. The accelerator and the DMA must never both own Port B in the same cycle. If either is busy, the other must not start (ACCELERATOR.md and section 5).
 
-Same-cycle writes of the same byte: Port A wins. Port B's data for that byte is dropped. Each other byte of the Port B transfer that Port A does not write in that cycle must commit. If any Port B byte is dropped, the sticky conflict bit (STATUS bit 3) must be set in both the DMA STATUS register and the accelerator STATUS register.
+Same-cycle writes of the same byte: Port A wins. Same byte, same cycle: Port A wins, the read is write-first, and both STATUS registers get sticky conflict bit 3. Port B's data for that byte is dropped. Each other byte of the Port B transfer that Port A does not write in that cycle must commit. If any Port B byte is dropped, the sticky conflict bit (STATUS bit 3) must be set in both the DMA STATUS register and the accelerator STATUS register.
 
 A scalar store and a DMA or accelerator beat that touch disjoint bytes must both commit.
 
@@ -111,7 +111,7 @@ for i from 0 to LEN-1:
 
 This order is deterministic. When DST > SRC and the ranges overlap, the result is the ascending-order result above. It is not the downward copy used by the C library in that case. The contract requires ascending order anyway.
 
-Abort is not all-or-nothing. Beats already committed must stay committed. Abort must write nothing further and must not roll those beats back. Programmers who need all-or-nothing must not abort a DMA. After abort, busy = 0 and done = 0. fault and conflict are left as they were.
+Abort is not all-or-nothing. Beats already committed must stay committed. Abort must write nothing further and must not roll those beats back. Bytes already copied stay as a committed prefix, and bytes not yet copied stay at their old values. Programmers who need all-or-nothing must not abort a DMA. After abort, busy = 0 and done = 0. fault and conflict are left as they were.
 
 Each committed beat is 8 bytes in ascending order, and each beat is atomic with respect to Port A under section 3. A scalar store to a different byte in the same cycle commits as well. A scalar store to the same byte wins, drops that Port B byte, and sets conflict in both STATUS registers.
 

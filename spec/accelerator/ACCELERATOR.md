@@ -70,7 +70,7 @@ A start (CTRL bit 0 = 1, and bit 1 = 0) is accepted only when this engine is not
 
 CTRL bit 1 = 1 while busy aborts. Abort must return the engine to idle with no destination write of any byte. Accelerator completion is all-or-nothing. Abort is not a fault by itself: busy = 0, done = 0, and the previous fault and conflict bits stay as they are unless this same CTRL write is not an abort. If one CTRL write sets both bit 0 and bit 1 while busy, abort wins and the new start is ignored. If both are set while idle, bit 1 is ignored and bit 0 is the start request.
 
-On success the engine must set busy = 0 and done = 1 in one completion, and must make every destination byte visible together, subject only to the Port A same-cycle conflict rule. Bytes dropped because Port A won must set conflict. Fault and abort must not publish a prefix of the destination. DMA abort is different and is not all-or-nothing; see MEMORY.md.
+On success the engine must set busy = 0 and done = 1 in one completion, and must make every destination byte visible together, subject only to the Port A same-cycle conflict rule. Bytes dropped because Port A won must set conflict. Fault and abort must not publish a prefix of the destination. A failed transaction does not publish: if fault = 1, destination buffer C is unchanged and done stays 0. DMA abort is different and is not all-or-nothing; see MEMORY.md.
 
 ## 3. Element layout
 
