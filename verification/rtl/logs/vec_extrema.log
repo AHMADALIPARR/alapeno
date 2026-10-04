@@ -1,0 +1,16 @@
+=== C reference vec_extrema ===
+command: gcc -O2 -o /tmp/vec_extrema_ref /tmp/vec_extrema_ref.c
+gcc_exit 0
+command: /tmp/vec_extrema_ref
+min=-9223372036854775808 (0x8000000000000000)
+max=9223372036854775807 (0x7fffffffffffffff)
+ref_exit 0
+=== iverilog tb_vec_extrema ===
+command: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/vec_extrema.vvp /workspace/alapeno/rtl/core/alapeno_pkg.sv /workspace/alapeno/rtl/vector/alapeno_vector.sv /workspace/alapeno/verification/rtl/tb_vec_extrema.sv
+iverilog_exit 0
+=== vvp tb_vec_extrema ===
+command: vvp /tmp/vec_extrema.vvp
+stimulus RED.MIN VL=4: [INT64_MAX,-1,INT64_MIN,42]; expect INT64_MIN
+C expected=8000000000000000 actual=8000000000000000
+PASS VEC EXTREMA: RED.MIN of [INT64_MAX,-1,INT64_MIN,42] published INT64_MIN
+vvp_exit 0

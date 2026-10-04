@@ -1,0 +1,19 @@
+=== C reference zmac_neg ===
+command: gcc -O2 -o /tmp/zmac_neg_ref /tmp/zmac_neg_ref.c
+gcc_exit 0
+command: /tmp/zmac_neg_ref
+a=-5 b=7 z0=11 prod=-35 sum=-24
+limbs: ffffffffffffffe8 ffffffffffffffff ffffffffffffffff ffffffffffffffff
+sum_dec=-24
+ref_exit 0
+=== iverilog tb_zmac_neg ===
+command: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/zmac_neg.vvp /workspace/alapeno/rtl/core/alapeno_pkg.sv /workspace/alapeno/rtl/mac/alapeno_mac.sv /workspace/alapeno/verification/rtl/tb_zmac_neg.sv
+/workspace/alapeno/rtl/mac/alapeno_mac.sv:54: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/mac/alapeno_mac.sv:64: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+iverilog_exit 0
+=== vvp tb_zmac_neg ===
+command: vvp /tmp/zmac_neg.vvp
+stimulus: a=-5 b=7 Z=11; expect sum=-24 (ISA ZMAC exact signed product+sum)
+C expected=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe8 actual=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe8
+PASS ZMAC NEG: a=-5 b=7 Z=11 -> published accumulator -24 (exact signed 256 limbs)
+vvp_exit 0
