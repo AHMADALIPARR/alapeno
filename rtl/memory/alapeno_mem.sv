@@ -4,6 +4,8 @@
 // is visible to a later read. A same-cycle read sees the winning new byte.
 // Shadow stores stay invisible until publish, which moves every dirty byte
 // in one step. Port A wins a same-byte contest and raises conflict.
+// Storage is the first 1536 bytes of the window (indices 0..1535). A higher
+// offset misses and does not wrap. 0x10000400 is byte 1024 and still fits.
 
 module alapeno_mem
   import alapeno_pkg::*;
@@ -34,13 +36,23 @@ module alapeno_mem
   output logic         conflict
 );
 
+  localparam int SRAM_BYTES = 1536;
+
   logic [7:0] rom [0:65535];
-  logic [7:0] sram [0:524287];
-  logic [7:0] shadow [0:524287];
-  logic       dirty [0:524287];
+  logic [7:0] sram [0:SRAM_BYTES-1];
+  logic [7:0] shadow [0:SRAM_BYTES-1];
+  logic       dirty [0:SRAM_BYTES-1];
 
   function automatic logic sram_hit(input logic [31:0] a);
     sram_hit = (a[31:19] == 13'h0200);
+  endfunction
+
+  function automatic logic sram_stored(input logic [31:0] a);
+    sram_stored = sram_hit(a) && (a[18:0] < 19'(SRAM_BYTES));
+  endfunction
+
+  function automatic logic [10:0] sram_idx(input logic [31:0] a);
+    sram_idx = a[10:0];
   endfunction
 
   function automatic logic rom_hit(input logic [31:0] a);
@@ -69,18 +81,18 @@ module alapeno_mem
 
   function automatic logic [7:0] visible_byte(input logic [31:0] addr);
     logic [7:0] b;
-    logic [18:0] off;
+    logic [10:0] ix;
     begin
       b = 8'h00;
       if (rom_hit(addr)) b = rom[addr[15:0]];
-      else if (sram_hit(addr)) begin
-        off = addr[18:0];
-        b = sram[off];
-        if (b_publish && dirty[off]) b = shadow[off];
+      else if (sram_stored(addr)) begin
+        ix = sram_idx(addr);
+        b = sram[ix];
+        if (b_publish && dirty[ix]) b = shadow[ix];
       end
-      if (b_valid && b_we && !b_shadow && !b_publish && sram_hit(addr) && range_hit(addr, b_addr, b_size))
+      if (b_valid && b_we && !b_shadow && !b_publish && sram_stored(addr) && range_hit(addr, b_addr, b_size))
         b = lane_byte(b_wdata, addr, b_addr);
-      if (a_valid && a_we && sram_hit(addr) && range_hit(addr, a_addr, a_size))
+      if (a_valid && a_we && sram_stored(addr) && range_hit(addr, a_addr, a_size))
         b = lane_byte(a_wdata, addr, a_addr);
       visible_byte = b;
     end
@@ -89,6 +101,7 @@ module alapeno_mem
   integer i;
   integer k;
   logic [31:0] ba, bb;
+  logic [10:0] ix;
   logic [255:0] a_next, b_next;
   logic hit_conflict;
 
@@ -100,7 +113,7 @@ module alapeno_mem
       a_next = '0;
       b_next = '0;
       hit_conflict = 1'b0;
-      for (i = 0; i < 524288; i = i + 1) begin
+      for (i = 0; i < SRAM_BYTES; i = i + 1) begin
         sram[i] <= 8'h00;
         shadow[i] <= 8'h00;
         dirty[i] <= 1'b0;
@@ -117,7 +130,7 @@ module alapeno_mem
         for (k = 0; k < 32; k = k + 1) begin
           if (k < a_size) begin
             ba = a_addr + k[31:0];
-            if (sram_hit(ba) && range_hit(ba, b_addr, b_size)) hit_conflict = 1'b1;
+            if (sram_stored(ba) && range_hit(ba, b_addr, b_size)) hit_conflict = 1'b1;
           end
         end
       end
@@ -125,7 +138,7 @@ module alapeno_mem
         for (k = 0; k < 32; k = k + 1) begin
           if (k < a_size) begin
             ba = a_addr + k[31:0];
-            if (sram_hit(ba) && dirty[ba[18:0]]) hit_conflict = 1'b1;
+            if (sram_stored(ba) && dirty[sram_idx(ba)]) hit_conflict = 1'b1;
           end
         end
       end
@@ -137,7 +150,7 @@ module alapeno_mem
         for (k = 0; k < 32; k = k + 1) begin
           if (k < a_size) begin
             ba = a_addr + k[31:0];
-            if (sram_hit(ba)) sram[ba[18:0]] <= a_wdata[(k * 8) +: 8];
+            if (sram_stored(ba)) sram[sram_idx(ba)] <= a_wdata[(k * 8) +: 8];
           end
         end
       end
@@ -146,9 +159,10 @@ module alapeno_mem
         for (k = 0; k < 32; k = k + 1) begin
           if (k < b_size) begin
             bb = b_addr + k[31:0];
-            if (sram_hit(bb)) begin
-              shadow[bb[18:0]] <= b_wdata[(k * 8) +: 8];
-              dirty[bb[18:0]] <= 1'b1;
+            if (sram_stored(bb)) begin
+              ix = sram_idx(bb);
+              shadow[ix] <= b_wdata[(k * 8) +: 8];
+              dirty[ix] <= 1'b1;
             end
           end
         end
@@ -156,22 +170,22 @@ module alapeno_mem
         for (k = 0; k < 32; k = k + 1) begin
           if (k < b_size) begin
             bb = b_addr + k[31:0];
-            if (sram_hit(bb) && !(a_valid && a_we && range_hit(bb, a_addr, a_size)))
-              sram[bb[18:0]] <= b_wdata[(k * 8) +: 8];
+            if (sram_stored(bb) && !(a_valid && a_we && range_hit(bb, a_addr, a_size)))
+              sram[sram_idx(bb)] <= b_wdata[(k * 8) +: 8];
           end
         end
       end
 
       if (b_discard) begin
-        for (i = 0; i < 524288; i = i + 1) dirty[i] <= 1'b0;
+        for (i = 0; i < SRAM_BYTES; i = i + 1) dirty[i] <= 1'b0;
       end else if (b_publish) begin
-        for (i = 0; i < 524288; i = i + 1) begin
+        for (i = 0; i < SRAM_BYTES; i = i + 1) begin
           if (dirty[i]) begin
             ba = SRAM_LO + i[31:0];
             if (a_valid && a_we && range_hit(ba, a_addr, a_size)) begin
-              sram[i[18:0]] <= lane_byte(a_wdata, ba, a_addr);
+              sram[i] <= lane_byte(a_wdata, ba, a_addr);
             end else begin
-              sram[i[18:0]] <= shadow[i[18:0]];
+              sram[i] <= shadow[i];
             end
             dirty[i] <= 1'b0;
           end

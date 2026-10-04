@@ -35,3 +35,5 @@ The live Yosys is still inside `read_slang`. It was started with `--unroll-limit
 The frozen tile (`alapeno_tile_ctrl`) uses SRAM offsets `ptr_a` 0, `ptr_b` `0x80`, `ptr_c` `0x100`, `ldc` 128, and 4 rows. C occupies `4 * 128 = 512` bytes, so the last C byte is `0x100 + 512 - 1 = 767`. The smallest SRAM depth that contains bytes 0 through 767 is 768. That is the cut that would let the unroll finish. It was not re-run in Yosys, because a second Yosys was forbidden while the stuck read holds the machine.
 
 `alapeno_top` also elaborates `alapeno_matrix` with the default `obuf [0:131071]`, which is not in `alapeno_mem`.
+
+Implemented in alapeno_mem.sv as SRAM_BYTES 1536 (indices 0..1535), not 768. The copy at 0x10000400 is byte 1024, and the last copy byte is 1535, so it fits. Reset, discard, and publish walk SRAM_BYTES only. Yosys was not run.

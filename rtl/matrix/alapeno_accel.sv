@@ -154,7 +154,7 @@ module alapeno_accel
     want_v = is_vec && !empty_ok && !shape_bad;
   end
 
-  alapeno_matrix u_matrix (
+  alapeno_matrix #(.OBUF_BYTES(512)) u_matrix (
     .clk(clk), .rst(rst), .run(run_m), .kill(kill), .field_mode(s_field), .op(s_op),
     .m_dim(s_m), .n_dim(s_n), .k_dim(s_k),
     .ptr_a(s_pa), .ptr_b(s_pb), .ptr_c(s_pc),
