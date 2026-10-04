@@ -1,0 +1,6 @@
+check 0*0+0 -> 0
+check 15*15+0 -> 225
+check 15*15+31 wrap -> 0
+check 2*3+4 -> 10
+check 15*1+241 wrap -> 0
+all integer mac vectors matched
