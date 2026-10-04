@@ -10,7 +10,18 @@ Licensed under the GNU Affero General Public License v3.0 only (`LICENSE`). Not 
 
 `compiler/` holds `compile.mlw` and `COPYING` (AGPL-3.0 text). `verification/isa/` holds `isa_check.mlw` and Why3 logs in `logs/` (`why3-compile.log`, `why3-isa.log`). Measured with Why3 1.8.0: `compile.mlw` 121 Valid, `isa_check.mlw` 6 Valid, zero timeouts in those logs (dated Sat Oct 3 20:32:16 2026 and Sat Oct 3 20:32:19 2026).
 
-Only the files present in this commit exist. `rtl/` (`core/`, `dma/`, `matrix/`, `memory/`, `vector/`) and `verification/rtl/` are not in this commit: no RTL and no synthesis results.
+`rtl/` holds SystemVerilog sources: `alapeno_top.sv`, `core/` (`alapeno_core.sv`, `alapeno_pkg.sv`), `dma/alapeno_dma.sv`, `matrix/` (`alapeno_accel.sv`, `alapeno_matrix.sv`), `memory/alapeno_mem.sv`, and `vector/alapeno_vector.sv`. The RTL sources are present and were not synthesized. There are no synthesis results.
+
+`verification/rtl/` holds `mac_ref.sv`, `tb_mac_ref.sv`, and `logs/mac_ref.log`. The log has five checks and the line `all integer mac vectors matched`:
+
+```
+check 0*0+0 -> 0
+check 15*15+0 -> 225
+check 15*15+31 wrap -> 0
+check 2*3+4 -> 10
+check 15*1+241 wrap -> 0
+all integer mac vectors matched
+```
 
 `spice/` holds illustrative Level-1 MOSFET netlists (not a foundry PDK): `cells/` (`and2`, `dff`, `fa`, `inv`, `mux2`, `nand2`, `nor2`, `xor2`, `models.inc`), `clock/` (`clk_buf`, `clk_gate`, `ring3`), `corners/` (`models_ff`, `models_ss`, `models_tt`), `mac/mac4.sp`, `sram/` (`bitcell_6t`, `array_2x2`), and `COPYING` (AGPL-3.0 text).
 
