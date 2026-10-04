@@ -72,3 +72,13 @@ Abort and fault do not publish a partial destination. The matrix raises `b_disca
 Port A wins a same-byte contest. A Port A write updates `sram` even when Port B writes the same byte in that cycle, and the Port B byte is dropped. On publish, a Port A write to a dirty byte is what lands in `sram`, not the shadow byte. Either case sets `conflict`.
 
 DMA abort keeps the committed prefix. DMA writes go straight to `sram` through Port B with shadow off, eight bytes at a time. Abort returns the DMA to idle and stops further writes. Bytes already stored stay. DMA does not roll the prefix back, and it does not use the shadow publish path.
+
+## 2026-10-04
+
+Yosys 0.69+187 was run on `alapeno_tile_ctrl` after the matrix publish buffer depth was parameterized. The tile instance elaborates `OBUF_BYTES=512`. The command was:
+
+```
+/opt/oss-cad-suite/bin/yosys -Q -l /tmp/yosys_tile_mem.log -p 'plugin -i /opt/oss-cad-suite/share/yosys/plugins/slang.so; read_slang --std latest /workspace/alapeno/rtl/core/alapeno_pkg.sv /workspace/alapeno/rtl/matrix/alapeno_matrix.sv /workspace/alapeno/rtl/matrix/alapeno_tile_ctrl.sv; hierarchy -check -top alapeno_tile_ctrl; proc; memory; techmap; stat'
+```
+
+Exit code 0. The script uses `memory`, not `memory -nomap`. The `stat` cell list has no `$mem_v2`. `memory_map` printed `Mapping memory \u_matrix.obuf` and `created 512 $dff cells and 0 static cells of width 8.`

@@ -27,7 +27,9 @@ module alapeno_tile_ctrl
 
   assign status = {28'h0, 1'b0, fault_b, done_b, run_q};
 
-  alapeno_matrix u_matrix (
+  alapeno_matrix #(
+    .OBUF_BYTES(512)
+  ) u_matrix (
     .clk(clk),
     .rst(rst),
     .run(run_q),

@@ -3,6 +3,9 @@
 
 module alapeno_matrix
   import alapeno_pkg::*;
+#(
+  parameter int OBUF_BYTES = 131072
+)
 (
   input  logic         clk,
   input  logic         rst,
@@ -53,7 +56,7 @@ module alapeno_matrix
   logic [31:0] m, n, k, pass;
   logic [63:0] hold_a, hold_b, hold_e, hold_p, hold_j, fres;
   logic signed [255:0] accz;
-  logic [7:0] obuf [0:131071];
+  logic [7:0] obuf [0:OBUF_BYTES-1];
   integer bi;
   logic [31:0] ew, ix, baddr;
   logic is_proj, is_route;
@@ -278,7 +281,8 @@ module alapeno_matrix
             d2b = d2.val;
             for (bi = 0; bi < 8; bi = bi + 1) begin
               obuf[ix + bi[31:0]] <= d1b[(bi * 8) +: 8];
-              obuf[32'd65536 + ix + bi[31:0]] <= d2b[(bi * 8) +: 8];
+              if (OBUF_BYTES > 65536)
+                obuf[32'd65536 + ix + bi[31:0]] <= d2b[(bi * 8) +: 8];
             end
             if ((n + 32'd1) == n_dim) begin
               n <= 32'h0;
@@ -293,7 +297,8 @@ module alapeno_matrix
         end
         M_PACK: begin
           pack_w = '0;
-          if (is_proj && (pass == 32'd1)) ix = 32'd65536 + (m * n_dim + n) * 32'd8;
+          if (is_proj && (pass == 32'd1) && (OBUF_BYTES > 65536))
+            ix = 32'd65536 + (m * n_dim + n) * 32'd8;
           else if (is_proj) ix = (m * n_dim + n) * 32'd8;
           else ix = (m * n_dim + n) * ew;
           for (bi = 0; bi < 32; bi = bi + 1) begin
