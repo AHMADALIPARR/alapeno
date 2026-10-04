@@ -1,0 +1,28 @@
+=== iverilog tb_accel_abort ===
+command: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/accel_abort.vvp /workspace/alapeno/rtl/core/alapeno_pkg.sv /workspace/alapeno/rtl/matrix/alapeno_matrix.sv /workspace/alapeno/rtl/vector/alapeno_vector.sv /workspace/alapeno/rtl/matrix/alapeno_accel.sv /workspace/alapeno/rtl/memory/alapeno_mem.sv /workspace/alapeno/verification/rtl/tb_accel_abort.sv
+/workspace/alapeno/rtl/matrix/alapeno_matrix.sv:79: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/vector/alapeno_vector.sv:58: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+iverilog_exit 0
+=== vvp tb_accel_abort ===
+command: vvp /tmp/accel_abort.vvp
+accel busy after start
+pre-abort shadow dirty_bytes=32 sram_still_seed=1 b_publish=1 b_discard=0
+post-abort busy=0 done=0 fault=0 discard_seen_now=0 publish_now=0
+PASS ACCEL ABORT: all 32 destination bytes unchanged at 0x10000020 (seed 5a); shadow product was not published
+vvp_exit 0

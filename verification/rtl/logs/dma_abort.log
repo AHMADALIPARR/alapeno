@@ -1,0 +1,17 @@
+=== iverilog tb_dma_abort ===
+command: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/dma_abort.vvp /workspace/alapeno/rtl/core/alapeno_pkg.sv /workspace/alapeno/rtl/dma/alapeno_dma.sv /workspace/alapeno/rtl/memory/alapeno_mem.sv /workspace/alapeno/verification/rtl/tb_dma_abort.sv
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+iverilog_exit 0
+=== vvp tb_dma_abort ===
+command: vvp /tmp/dma_abort.vvp
+seen committed_prefix=8 bytes busy=1 state=1 off=00000008
+after abort busy=0 done=0 fault=0
+PASS DMA ABORT: committed prefix 8 bytes kept, remaining 24 bytes unchanged, busy=0 done=0
+vvp_exit 0
