@@ -1,0 +1,20 @@
+git rev-parse HEAD: 79743fe326138b8b9e3a2d281efb7fd2846a61f0
+bench: porta
+cmd: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/alapeno_porta_contest.vvp rtl/core/alapeno_pkg.sv rtl/matrix/alapeno_matrix.sv rtl/vector/alapeno_vector.sv rtl/matrix/alapeno_accel.sv rtl/dma/alapeno_dma.sv rtl/memory/alapeno_mem.sv verification/rtl/tb_porta_contest.sv
+iverilog_exit: 0
+iverilog_stderr_bytes: 0
+----- iverilog stdout -----
+----- end iverilog stdout -----
+----- iverilog stderr -----
+----- end iverilog stderr -----
+vvp_exit: 0
+vvp_stderr_bytes: 0
+----- vvp stdout -----
+split stored b0=11 b1=22 mem_conflict=0
+contest stored=aa mem_conflict=1 a_next=aa b_next=aa a_rdata=00 b_rdata=00
+DMA STATUS=00000008 ACCEL STATUS=00000008
+PASS PORT A: stored 0xAA, same-cycle read mux 0xAA, split 0x11/0x22 both stored, STATUS bit3 set in DMA and accel
+----- end vvp stdout -----
+----- vvp stderr -----
+----- end vvp stderr -----
+pass_line: present

@@ -1,0 +1,20 @@
+git rev-parse HEAD: 79743fe326138b8b9e3a2d281efb7fd2846a61f0
+bench: accel_abort
+cmd: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/alapeno_accel_abort.vvp rtl/core/alapeno_pkg.sv rtl/matrix/alapeno_matrix.sv rtl/vector/alapeno_vector.sv rtl/matrix/alapeno_accel.sv rtl/memory/alapeno_mem.sv verification/rtl/tb_accel_abort.sv
+iverilog_exit: 0
+iverilog_stderr_bytes: 0
+----- iverilog stdout -----
+----- end iverilog stdout -----
+----- iverilog stderr -----
+----- end iverilog stderr -----
+vvp_exit: 0
+vvp_stderr_bytes: 0
+----- vvp stdout -----
+accel busy after start
+pre-abort shadow dirty_bytes=32 sram_still_seed=1 b_publish=1 b_discard=0
+post-abort busy=0 done=0 fault=0 discard_seen_now=0 publish_now=0
+PASS ACCEL ABORT: all 32 destination bytes unchanged at 0x10000020 (seed 5a); shadow product was not published
+----- end vvp stdout -----
+----- vvp stderr -----
+----- end vvp stderr -----
+pass_line: present

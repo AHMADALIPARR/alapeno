@@ -1,0 +1,19 @@
+git rev-parse HEAD: 79743fe326138b8b9e3a2d281efb7fd2846a61f0
+bench: dma
+cmd: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/alapeno_dma_abort.vvp rtl/core/alapeno_pkg.sv rtl/dma/alapeno_dma.sv rtl/memory/alapeno_mem.sv verification/rtl/tb_dma_abort.sv
+iverilog_exit: 0
+iverilog_stderr_bytes: 0
+----- iverilog stdout -----
+----- end iverilog stdout -----
+----- iverilog stderr -----
+----- end iverilog stderr -----
+vvp_exit: 0
+vvp_stderr_bytes: 0
+----- vvp stdout -----
+seen committed_prefix=8 bytes busy=1 state=1 off=00000008
+after abort busy=0 done=0 fault=0
+PASS DMA ABORT: committed prefix 8 bytes kept, remaining 24 bytes unchanged, busy=0 done=0
+----- end vvp stdout -----
+----- vvp stderr -----
+----- end vvp stderr -----
+pass_line: present
