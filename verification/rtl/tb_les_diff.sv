@@ -9,6 +9,8 @@
 //   store:     M_SH b_we+b_shadow+b_wdata to ptr_c+(m*ldc)+(n*ew), ew=32
 //   complete:  M_PUB b_publish+complete
 //   fail:      M_BAD b_discard+fail (no publish)
+//   abort:     kill while state!=M_IDLE drives b_discard and forces M_IDLE (fail stays 0)
+// Failures call $fatal. On Icarus 12.0, $finish(1) exits 0 and $fatal(1) exits 1.
 // Overflow: TILE.md section 5. A sum of K signed-64 products stays in
 // signed 256 for every K <= 2^129 - 1. This tile has K=4. Legal K is at most 64.
 // Cite tile_k4_cannot_overflow (not printed Valid) and tile_overflow_faults_without_write
@@ -140,13 +142,13 @@ module tb_les_diff;
       if (complete) saw_complete <= 1'b1;
       if (fail) saw_fail <= 1'b1;
       if (b_publish) saw_publish <= 1'b1;
-      if (b_discard) saw_discard <= 1'b0;
+      if (b_discard) saw_discard <= 1'b1;
     end
   end
 
   integer cycles, idx, mism;
   logic done_pulse, fail_pulse;
-  logic pass_reset, pass_les;
+  logic pass_reset, pass_les, pass_abort, pass_fault;
   logic [255:0] got, expv;
 
   task automatic wait_done_or_fail(input integer maxc);
@@ -183,6 +185,8 @@ module tb_les_diff;
 
     pass_reset = 1'b0;
     pass_les = 1'b0;
+    pass_abort = 1'b0;
+    pass_fault = 1'b0;
     run = 1'b0;
     kill = 1'b0;
     field_mode = 1'b0;
@@ -198,7 +202,7 @@ module tb_les_diff;
     repeat (4) tick;
     if (complete !== 1'b0 || fail !== 1'b0 || b_publish !== 1'b0) begin
       $display("FAIL reset: complete=%b fail=%b publish=%b", complete, fail, b_publish);
-      $finish(1);
+      $fatal(1, "FAIL");
     end
     $display("PASS reset: complete=0 fail=0 publish=0 (idle)");
     pass_reset = 1'b1;
@@ -230,7 +234,7 @@ module tb_les_diff;
     if (!done_pulse || fail_pulse || !saw_publish || saw_fail) begin
       $display("FAIL LES status: done=%b fail=%b publish=%b saw_fail=%b cycles=%0d",
                done_pulse, fail_pulse, saw_publish, saw_fail, cycles);
-      $finish(1);
+      $fatal(1, "FAIL");
     end
 
     mism = 0;
@@ -246,25 +250,101 @@ module tb_les_diff;
     end
     if (mism != 0) begin
       $display("FAIL LES: %0d element mismatches", mism);
-      $finish(1);
+      $fatal(1, "FAIL");
     end
     $display("PASS LES: 4x4x4 non-field MATMUL C bit-exact (TILE known)");
     pass_les = 1'b1;
 
-    // ---- 3. Overflow not reachable on current ports ----
+    // ---- 3. Abort: kill while not idle ----
+    // RTL: kill && state!=M_IDLE drives b_discard and returns to M_IDLE.
+    // kill does not enter M_BAD, so fail stays 0 and shadow is not published.
+    // Pre-test C is the TILE product just published (512 bytes).
+    cap_clr = 1'b1; tick; cap_clr = 1'b0; tick;
+    run = 1'b1; tick; run = 1'b0;
+    repeat (8) tick;
+    if (complete !== 1'b0 || fail !== 1'b0 || saw_publish !== 1'b0) begin
+      $display("FAIL abort setup: left idle window complete=%b fail=%b publish=%b",
+               complete, fail, saw_publish);
+      $fatal(1, "FAIL");
+    end
+    kill = 1'b1; tick; kill = 1'b0;
+    tick; tick;
+    if (saw_discard !== 1'b1 || saw_fail !== 1'b0 || saw_publish !== 1'b0 || saw_complete !== 1'b0) begin
+      $display("FAIL abort flags: saw_discard=%b saw_fail=%b saw_publish=%b saw_complete=%b",
+               saw_discard, saw_fail, saw_publish, saw_complete);
+      $fatal(1, "FAIL");
+    end
+    mism = 0;
+    for (idx = 0; idx < 16; idx = idx + 1) begin
+      expv = {192'h0, Cknown[idx]};
+      got = sram_get32(ptr_c + (idx * 32'd32));
+      if (got !== expv) begin
+        $display("FAIL abort C[%0d] changed expected=%h actual=%h", idx, expv, got);
+        mism = mism + 1;
+      end
+    end
+    if (mism != 0) begin
+      $display("FAIL abort: %0d C elements changed (512-byte destination)", mism);
+      $fatal(1, "FAIL");
+    end
+    $display("PASS abort: kill while not idle set saw_discard, fail stayed 0, no publish; 512 C bytes unchanged (TILE product)");
+    pass_abort = 1'b1;
+
+    // ---- 4. Field-mode residue >= p (not a signed-256 MATMUL overflow) ----
+    // M_CA: field_mode && b_rdata[63:0] >= P -> M_BAD (b_discard and fail, no publish).
+    begin : field_fault
+      integer ci;
+      logic [11:0] cbase;
+      cbase = off(ptr_c);
+      for (ci = 0; ci < 512; ci = ci + 1)
+        sram[cbase + ci[11:0]] = 8'hA5;
+    end
+    sram_put8(ptr_a, P);
+    field_mode = 1'b1;
+    cap_clr = 1'b1; tick; cap_clr = 1'b0; tick;
+    run = 1'b1; tick; run = 1'b0;
+    wait_done_or_fail(5000);
+    if (!fail_pulse || done_pulse || saw_discard !== 1'b1 || saw_fail !== 1'b1 || saw_publish !== 1'b0) begin
+      $display("FAIL field-fault status: done=%b fail=%b saw_discard=%b saw_fail=%b saw_publish=%b cycles=%0d",
+               done_pulse, fail_pulse, saw_discard, saw_fail, saw_publish, cycles);
+      $fatal(1, "FAIL");
+    end
+    mism = 0;
+    begin : field_check
+      integer ci;
+      logic [11:0] cbase;
+      logic [7:0] gb;
+      cbase = off(ptr_c);
+      for (ci = 0; ci < 512; ci = ci + 1) begin
+        gb = sram[cbase + ci[11:0]];
+        if (gb !== 8'hA5) begin
+          $display("FAIL field-fault C byte %0d changed actual=%h", ci, gb);
+          mism = mism + 1;
+        end
+      end
+    end
+    if (mism != 0) begin
+      $display("FAIL field-fault: %0d of 512 destination bytes changed", mism);
+      $fatal(1, "FAIL");
+    end
+    $display("PASS field-fault: field_mode residue >= p (A[0]=P) raised fail and b_discard; 512 C bytes unchanged (seed 0xA5). Not a MATMUL overflow.");
+    field_mode = 1'b0;
+    pass_fault = 1'b1;
+
+    // ---- 5. Overflow not reachable on current ports ----
     $display("OVF not a tile stimulus: TILE.md section 5. K signed-64 products stay in signed 256 for K <= 2^129-1. This tile K=4. Legal accelerator K <= 64. Cite tile_k4_cannot_overflow (Why3 did not print it Valid) and tile_overflow_faults_without_write for the general rule. No faked M_BAD. No K above 64.");
 
-    if (pass_reset && pass_les) begin
-      $display("all LES differential checks matched (4x4 C; overflow not a legal-K stimulus)");
+    if (pass_reset && pass_les && pass_abort && pass_fault) begin
+      $display("all LES differential checks matched (4x4 C; abort; field residue fault; overflow not a legal-K stimulus)");
       $finish(0);
     end
     $display("FAIL aggregate");
-    $finish(1);
+    $fatal(1, "FAIL");
   end
 
   initial begin
-    #500000;
+    #2000000;
     $display("FAIL timeout");
-    $finish(1);
+    $fatal(1, "FAIL");
   end
 endmodule

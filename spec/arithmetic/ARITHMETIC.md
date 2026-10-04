@@ -34,7 +34,7 @@ A 32-byte signed-256 memory value uses the same limb layout as Z: limb 0 at the 
 
 Scalar ADD, SUB, ADDI, and MUL.LO write the low 64 bits and must not trap on overflow. Example: `0x7FFFFFFFFFFFFFFF + 1` writes `0x8000000000000000`, the signed value -2^63.
 
-Wrapping 64-bit addition is not associative once overflow is possible. `(2^63 - 1) + 1 + (-1)` depends on parenthesization if each step wraps. There is no wrapping vector reduction. RED.SUM, ZADD, ZMAC, and non-field accelerator MATMUL and VADD must not be implemented with wrapping 64-bit add.
+Wrapping 64-bit addition modulo 2^64 is associative: (Z/2^64Z, +) is an abelian group, so every parenthesization of a wrap-add chain yields the same residue. Exact reduction is still required because wrapping changes the mathematical integer result even though that ring addition is associative; a reduction must be the exact mathematical integer sum (or the exact operator result). There is no wrapping vector reduction. RED.SUM, ZADD, ZMAC, and non-field accelerator MATMUL and VADD must not be implemented with wrapping 64-bit add.
 
 MUL.HI returns bits [127:64] of the exact signed 128-bit product. MULU.HI returns bits [127:64] of the exact unsigned 128-bit product. MUL.LO returns bits [63:0] of the signed product. The signed and unsigned low halves of a product are the same bits; the high halves are not.
 

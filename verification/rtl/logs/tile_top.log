@@ -1,0 +1,168 @@
+=== iverilog tile_top ===
+command: iverilog -g2012 -I /workspace/alapeno/rtl/core -o /tmp/tile_top.vvp /workspace/alapeno/rtl/core/alapeno_pkg.sv /workspace/alapeno/rtl/core/alapeno_core.sv /workspace/alapeno/rtl/matrix/alapeno_matrix.sv /workspace/alapeno/rtl/vector/alapeno_vector.sv /workspace/alapeno/rtl/matrix/alapeno_accel.sv /workspace/alapeno/rtl/dma/alapeno_dma.sv /workspace/alapeno/rtl/memory/alapeno_mem.sv /workspace/alapeno/rtl/alapeno_top.sv /workspace/alapeno/verification/rtl/tb_tile_top.sv
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/core/alapeno_core.sv:115: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_matrix.sv:76: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/vector/alapeno_vector.sv:58: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/matrix/alapeno_accel.sv:81: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/workspace/alapeno/rtl/dma/alapeno_dma.sv:49: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+iverilog_exit 0
+=== vvp tile_top ===
+command: vvp /tmp/tile_top.vvp
+program words=127 entry=d8000044 spin=d8000000
+PASS spin: pc=0 tcause=0 halted=0 while ROM image loads
+patched rom[0] to d8000044 (JAL x0, +0x44)
+stop cycles=642 pc=000001f8 tcause=00000000 tpc=00000000 halted=1
+OBS accel busy=0 done=1 fault=0
+OBS dma busy=0 done=1 fault=0
+COPY[0] expected=18 (0000000000000000000000000000000000000000000000000000000000000012) actual=18 (0000000000000000000000000000000000000000000000000000000000000012)
+COPY[1] expected=18 (0000000000000000000000000000000000000000000000000000000000000012) actual=18 (0000000000000000000000000000000000000000000000000000000000000012)
+COPY[2] expected=12 (000000000000000000000000000000000000000000000000000000000000000c) actual=12 (000000000000000000000000000000000000000000000000000000000000000c)
+COPY[3] expected=16 (0000000000000000000000000000000000000000000000000000000000000010) actual=16 (0000000000000000000000000000000000000000000000000000000000000010)
+COPY[4] expected=23 (0000000000000000000000000000000000000000000000000000000000000017) actual=23 (0000000000000000000000000000000000000000000000000000000000000017)
+COPY[5] expected=22 (0000000000000000000000000000000000000000000000000000000000000016) actual=22 (0000000000000000000000000000000000000000000000000000000000000016)
+COPY[6] expected=12 (000000000000000000000000000000000000000000000000000000000000000c) actual=12 (000000000000000000000000000000000000000000000000000000000000000c)
+COPY[7] expected=19 (0000000000000000000000000000000000000000000000000000000000000013) actual=19 (0000000000000000000000000000000000000000000000000000000000000013)
+COPY[8] expected=19 (0000000000000000000000000000000000000000000000000000000000000013) actual=19 (0000000000000000000000000000000000000000000000000000000000000013)
+COPY[9] expected=29 (000000000000000000000000000000000000000000000000000000000000001d) actual=29 (000000000000000000000000000000000000000000000000000000000000001d)
+COPY[10] expected=18 (0000000000000000000000000000000000000000000000000000000000000012) actual=18 (0000000000000000000000000000000000000000000000000000000000000012)
+COPY[11] expected=29 (000000000000000000000000000000000000000000000000000000000000001d) actual=29 (000000000000000000000000000000000000000000000000000000000000001d)
+COPY[12] expected=6 (0000000000000000000000000000000000000000000000000000000000000006) actual=6 (0000000000000000000000000000000000000000000000000000000000000006)
+COPY[13] expected=15 (000000000000000000000000000000000000000000000000000000000000000f) actual=15 (000000000000000000000000000000000000000000000000000000000000000f)
+COPY[14] expected=10 (000000000000000000000000000000000000000000000000000000000000000a) actual=10 (000000000000000000000000000000000000000000000000000000000000000a)
+COPY[15] expected=15 (000000000000000000000000000000000000000000000000000000000000000f) actual=15 (000000000000000000000000000000000000000000000000000000000000000f)
+PASS TILE: all 512 copy bytes matched at 0x10000400
+vvp_exit 0

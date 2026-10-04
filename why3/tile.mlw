@@ -11,6 +11,7 @@
 module Tile
 
   use int.Int
+  use int.EuclideanDivision
 
   function p : int = 18446744069414584321
   function min_i64 : int = -9223372036854775808
@@ -223,5 +224,60 @@ module Tile
     dma_base = 805306368 /\
     (forall i : int. 0 <= i /\ i < 16 ->
       c_src i = c_known i /\ c_dst i = c_src i)
+
+  (* Byte address of signed-64 element i: little-endian 8-byte slot at ptr + 8*i. *)
+  function elem64_addr (ptr i : int) : int = ptr + 8 * i
+
+  (* Little-endian signed-64 decode of bytes b0..b7 (b0 least significant).
+     value = sum_{k=0..6} b_k * 2^(8*k) - (if b7 >= 128 then 2^63 else 0)
+             + (mod b7 128) * 2^56 *)
+  function decode_i64_le (b0 b1 b2 b3 b4 b5 b6 b7 : int) : int =
+    b0
+    + b1 * 256
+    + b2 * 65536
+    + b3 * 16777216
+    + b4 * 4294967296
+    + b5 * 1099511627776
+    + b6 * 281474976710656
+    + (mod b7 128) * 72057594037927936
+    - (if b7 >= 128 then 9223372036854775808 else 0)
+
+  goal elem64_addr_is_ptr_plus_8i:
+    forall ptr i : int. elem64_addr ptr i = ptr + 8 * i
+
+  (* Canonical LE bytes of seeded a_at 0 = 2 decode back to 2. *)
+  goal decode_i64_le_seeded_two:
+    forall b0 b1 b2 b3 b4 b5 b6 b7 : int.
+      0 <= b0 /\ b0 <= 255 /\
+      0 <= b1 /\ b1 <= 255 /\
+      0 <= b2 /\ b2 <= 255 /\
+      0 <= b3 /\ b3 <= 255 /\
+      0 <= b4 /\ b4 <= 255 /\
+      0 <= b5 /\ b5 <= 255 /\
+      0 <= b6 /\ b6 <= 255 /\
+      0 <= b7 /\ b7 <= 255 /\
+      b0 = 2 /\ b1 = 0 /\ b2 = 0 /\ b3 = 0 /\
+      b4 = 0 /\ b5 = 0 /\ b6 = 0 /\ b7 = 0 ->
+      decode_i64_le b0 b1 b2 b3 b4 b5 b6 b7 = 2
+      /\ decode_i64_le b0 b1 b2 b3 b4 b5 b6 b7 = a_at 0
+      /\ elem64_addr ptr_a 0 = ptr_a + 8 * 0
+
+  (* Canonical LE bytes of seeded a_at 1 = 4. *)
+  goal decode_i64_le_seeded_four:
+    forall b0 b1 b2 b3 b4 b5 b6 b7 : int.
+      0 <= b0 /\ b0 <= 255 /\
+      0 <= b1 /\ b1 <= 255 /\
+      0 <= b2 /\ b2 <= 255 /\
+      0 <= b3 /\ b3 <= 255 /\
+      0 <= b4 /\ b4 <= 255 /\
+      0 <= b5 /\ b5 <= 255 /\
+      0 <= b6 /\ b6 <= 255 /\
+      0 <= b7 /\ b7 <= 255 /\
+      b0 = 4 /\ b1 = 0 /\ b2 = 0 /\ b3 = 0 /\
+      b4 = 0 /\ b5 = 0 /\ b6 = 0 /\ b7 = 0 ->
+      decode_i64_le b0 b1 b2 b3 b4 b5 b6 b7 = 4
+      /\ decode_i64_le b0 b1 b2 b3 b4 b5 b6 b7 = a_at 1
+      /\ elem64_addr ptr_a 1 = ptr_a + 8 * 1
+
 
 end
