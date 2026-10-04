@@ -1,0 +1,127 @@
+(* Why3 1.8.0 loaded this file. No proof is claimed except fold_sum'vc, route_dot'vc, and field_route_dot'vc, which the tool printed as Valid. *)
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+(* Copyright (C) 2026 Alapeno contributors *)
+(* The grant is AGPL-3.0-only and there is no MIT license. *)
+(*
+   Standalone integer and Goldilocks-field model.
+   No float sort, no rounding mode, no NaN.
+   Euclidean division is stated by `divides` and by the three
+   `residue_*` axioms. Those axioms are assumptions, not a discharged proof.
+*)
+
+module Arithmetic
+
+  use int.Int
+
+  function p : int = 18446744069414584321
+  function half : int = 9223372034707292160
+  function two64 : int = 18446744073709551616
+  function min_i64 : int = -9223372036854775808
+  function max_i64 : int = 9223372036854775807
+  function min_i256 : int =
+    -57896044618658097711785492504343953926634992332820282019728792003956564819968
+  function max_i256 : int =
+    57896044618658097711785492504343953926634992332820282019728792003956564819967
+
+  predicate divides (d n : int) = exists q : int. n = q * d
+
+  predicate in_i64 (x : int) = min_i64 <= x /\ x <= max_i64
+
+  predicate z_in_range (z : int) = min_i256 <= z /\ z <= max_i256
+
+  predicate residue_in_range (r : int) = 0 <= r /\ r < p
+
+  (* r is the Euclidean residue of z: z = q*p + r with r in [0, p). *)
+  predicate is_residue (z r : int) =
+    residue_in_range r /\ divides p (z - r)
+
+  function residue (z : int) : int
+
+  axiom residue_range : forall z : int. residue_in_range (residue z)
+
+  axiom residue_divides : forall z : int. divides p (z - residue z)
+
+  axiom residue_unique :
+    forall z r : int. is_residue z r -> r = residue z
+
+  predicate centered_nonpositive (r : int) =
+    residue_in_range r /\ (r = 0 \/ r > half)
+
+  function center (r : int) : int =
+    if r > half then r - p else r
+
+  predicate mac_exact (acc a b acc2 : int) =
+    z_in_range acc /\ in_i64 a /\ in_i64 b /\
+    acc2 = acc + a * b /\ z_in_range acc2
+
+  predicate mac_traps (acc a b : int) =
+    z_in_range acc /\ in_i64 a /\ in_i64 b /\
+    not (z_in_range (acc + a * b))
+
+  (* R1 reference fold. Index 0, then 1, then n-1. Identity is 0. *)
+  let rec function fold_sum (e : int -> int) (n : int) : int
+    variant { n }
+    = if n <= 0 then 0 else fold_sum e (n - 1) + e (n - 1)
+
+  predicate reduction_sum_equals_fold (e : int -> int) (n out : int) =
+    n >= 0 /\ out = fold_sum e n
+
+  (* R2, R3, R4, and R5 are legal only when they equal the R1 fold. *)
+  predicate tree_equals_fold (tree_out fold_out : int) =
+    tree_out = fold_out
+
+  predicate r5_equals_r1 (fused reference : int) = fused = reference
+
+  let function mask_term (q k : int) : int =
+    if k - q <= 0 then q * k else 0
+
+  let rec function route_dot (q k : int -> int) (n : int) : int
+    variant { n }
+    = if n <= 0 then 0
+      else route_dot q k (n - 1) + mask_term (q (n - 1)) (k (n - 1))
+
+  predicate route_equals_masked_dot (q k : int -> int) (n out : int) =
+    n >= 0 /\ out = route_dot q k n
+
+  function field_term (q k : int) : int =
+    if centered_nonpositive (residue (k - q))
+    then residue (q * k) else 0
+
+  let rec ghost function field_route_dot (q k : int -> int) (n : int) : int
+    variant { n }
+  = if n <= 0 then 0
+    else residue (field_route_dot q k (n - 1) + field_term (q (n - 1)) (k (n - 1)))
+
+  predicate field_sum_is (elems : int -> int) (n out : int) =
+    n >= 0 /\ out = residue (fold_sum elems n)
+
+  (* Concrete non-field route pairs from the arithmetic contract. *)
+  function ex_q (i : int) : int = if i = 0 then 1 else 2
+  function ex_k4 (i : int) : int = if i = 0 then 0 else 2
+  function ex_k0 (i : int) : int = if i = 0 then 3 else 0
+
+  predicate route_pair_masked_4 = route_dot ex_q ex_k4 2 = 4
+  predicate route_pair_masked_0 = route_dot ex_q ex_k0 2 = 0
+  predicate route_pair_two_differs_from_unmasked =
+    route_dot ex_q ex_k0 2 = 0 /\ ex_q 0 * ex_k0 0 + ex_q 1 * ex_k0 1 = 3
+
+  predicate residue_of_minus_one =
+    is_residue (-1) (p - 1)
+
+  predicate residue_of_p = is_residue p 0
+
+  predicate residue_of_p_plus_5 = is_residue (p + 5) 5
+
+  val modp (z : int) : int
+    ensures { result = residue z }
+    ensures { residue_in_range result }
+    ensures { divides p (z - result) }
+
+  val red_sum (e : int -> int) (n : int) : int
+    requires { n >= 0 }
+    requires { forall i : int. 0 <= i /\ i < n -> in_i64 (e i) }
+    requires { z_in_range (fold_sum e n) }
+    ensures { result = fold_sum e n }
+    ensures { z_in_range result }
+
+end

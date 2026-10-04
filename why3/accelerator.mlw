@@ -1,0 +1,157 @@
+(* Why3 1.8.0 loaded this file. No proof is claimed except dot'vc, route_dot'vc, and field_route_dot'vc, which the tool printed as Valid. *)
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+(* Copyright (C) 2026 Alapeno contributors *)
+(* The grant is AGPL-3.0-only and there is no MIT license. *)
+(*
+   Standalone accelerator model: unmasked MATMUL, ROUTE (R7), and PROJECT.
+   SHA-512 sealing is not modeled. No float sort.
+   Euclidean residue axioms below are assumptions, not a discharged proof.
+   This file repeats the constants it needs so it can be read alone.
+*)
+
+module Accelerator
+
+  use int.Int
+
+  function p : int = 18446744069414584321
+  function half : int = 9223372034707292160
+  function min_i64 : int = -9223372036854775808
+  function max_i64 : int = 9223372036854775807
+  function min_i256 : int =
+    -57896044618658097711785492504343953926634992332820282019728792003956564819968
+  function max_i256 : int =
+    57896044618658097711785492504343953926634992332820282019728792003956564819967
+  function sram_lo : int = 268435456
+  function sram_hi : int = 268959743
+  function dim_max : int = 64
+
+  function op_matmul : int = 1
+  function op_vadd : int = 2
+  function op_vsub : int = 3
+  function op_red_sum : int = 4
+  function op_red_min : int = 5
+  function op_red_max : int = 6
+  function op_route : int = 7
+  function op_project : int = 8
+
+  predicate divides (d n : int) = exists q : int. n = q * d
+
+  predicate in_i64 (x : int) = min_i64 <= x /\ x <= max_i64
+
+  predicate z_in_range (z : int) = min_i256 <= z /\ z <= max_i256
+
+  predicate residue_in_range (r : int) = 0 <= r /\ r < p
+
+  predicate is_residue (z r : int) =
+    residue_in_range r /\ divides p (z - r)
+
+  function residue (z : int) : int
+
+  axiom residue_range : forall z : int. residue_in_range (residue z)
+
+  axiom residue_divides : forall z : int. divides p (z - residue z)
+
+  axiom residue_unique :
+    forall z r : int. is_residue z r -> r = residue z
+
+  predicate in_sram (a : int) = sram_lo <= a /\ a <= sram_hi
+
+  predicate aligned (a k : int) = k > 0 /\ divides k a
+
+  predicate dim_ok (n : int) = 0 <= n /\ n <= dim_max
+
+  let rec function dot (a b : int -> int) (k : int) : int
+    variant { k }
+    = if k <= 0 then 0 else dot a b (k - 1) + a (k - 1) * b (k - 1)
+
+  predicate matmul_unmasked (a b : int -> int) (k out : int) =
+    k >= 0 /\ out = dot a b k /\ z_in_range out
+
+  predicate field_dot (a b : int -> int) (k out : int) =
+    k >= 0 /\ out = residue (dot a b k)
+
+  (* Programmer invariant when W * W^T = I. Hardware does not test W. *)
+  predicate perm_head_invariant (head ab w_wt_is_i : int) =
+    w_wt_is_i = 1 -> head = ab
+
+  let function mask_term (q k : int) : int =
+    if k - q <= 0 then q * k else 0
+
+  let rec function route_dot (q k : int -> int) (n : int) : int
+    variant { n }
+    = if n <= 0 then 0
+      else route_dot q k (n - 1) + mask_term (q (n - 1)) (k (n - 1))
+
+  predicate route_equals_masked_dot (q k : int -> int) (n out : int) =
+    n >= 0 /\ out = route_dot q k n
+
+  predicate centered_nonpositive (r : int) =
+    residue_in_range r /\ (r = 0 \/ r > half)
+
+  function field_term (q k : int) : int =
+    if centered_nonpositive (residue (k - q))
+    then residue (q * k) else 0
+
+  let rec ghost function field_route_dot (q k : int -> int) (n : int) : int
+    variant { n }
+  = if n <= 0 then 0
+    else residue (field_route_dot q k (n - 1) + field_term (q (n - 1)) (k (n - 1)))
+
+  predicate project_step (e pr proj proj2 pr2 : int) =
+    in_i64 e /\ in_i64 pr /\ in_i64 proj /\
+    in_i64 (e - pr) /\
+    proj2 = proj + (e - pr) /\
+    in_i64 proj2 /\
+    pr2 = pr + proj2 /\
+    in_i64 pr2
+
+  (* True only for a successful step whose incoming Proj is 0. *)
+  predicate project_when_proj_zero (e pr pr2 proj2 : int) =
+    project_step e pr 0 proj2 pr2 /\ pr2 = e /\ proj2 = e - pr
+
+  predicate project_general_not_e (e pr proj pr2 : int) =
+    project_step e pr proj (proj + (e - pr)) pr2 /\
+    pr2 = e + proj
+
+  function ex_q (i : int) : int = if i = 0 then 1 else 2
+  function ex_k0 (i : int) : int = if i = 0 then 3 else 0
+
+  predicate route_not_unmasked_dot =
+    route_dot ex_q ex_k0 2 = 0 /\
+    dot ex_q ex_k0 2 = 3
+
+  predicate project_numeric_zero =
+    project_when_proj_zero 10 4 10 6
+
+  predicate project_numeric_nonzero =
+    project_step 10 4 3 9 13 /\ 13 = 10 + 3
+
+  predicate no_dest_alias (src_lo src_hi dst_lo dst_hi : int) =
+    dst_hi < src_lo \/ src_hi < dst_lo
+
+  predicate row_in_sram (ptr stride cols width rows : int) =
+    (width = 8 \/ width = 32) /\
+    aligned ptr width /\ aligned stride width /\
+    stride >= cols * width /\
+    dim_ok rows /\ dim_ok cols /\
+    (rows = 0 \/ cols = 0 \/
+      (in_sram ptr /\
+       in_sram (ptr + (rows - 1) * stride + (cols - 1) * width + width - 1)))
+
+  predicate accel_limits (m n k vl : int) =
+    dim_ok m /\ dim_ok n /\ dim_ok k /\ dim_ok vl
+
+  val matmul_cell (a b : int -> int) (k : int) : int
+    requires { 0 <= k /\ k <= dim_max }
+    requires { forall i : int. 0 <= i /\ i < k -> in_i64 (a i) /\ in_i64 (b i) }
+    ensures { matmul_unmasked a b k result }
+
+  val project_proj (e pr proj : int) : int
+    requires { in_i64 e /\ in_i64 pr /\ in_i64 proj }
+    requires { in_i64 (e - pr) }
+    requires { in_i64 (proj + (e - pr)) }
+    requires { in_i64 (pr + (proj + (e - pr))) }
+    ensures { exists pr2 : int. project_step e pr proj result pr2 }
+    ensures { proj = 0 -> result = e - pr }
+
+end

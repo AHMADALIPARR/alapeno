@@ -1,0 +1,138 @@
+(* Why3 1.8.0 loaded this file. No goal was printed Valid. No proof is claimed. *)
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+(* Copyright (C) 2026 Alapeno contributors *)
+(* The grant is AGPL-3.0-only and there is no MIT license. *)
+(*
+   Standalone model of the programmer-visible integer ISA.
+   Not RISC-V. No float sort. Depends only on int.Int.
+   Euclidean division is the predicate `divides` below, not a library import.
+*)
+
+module Isa
+
+  use int.Int
+
+  function two32 : int = 4294967296
+  function two64 : int = 18446744073709551616
+  function min_i64 : int = -9223372036854775808
+  function max_i64 : int = 9223372036854775807
+  function min_i256 : int =
+    -57896044618658097711785492504343953926634992332820282019728792003956564819968
+  function max_i256 : int =
+    57896044618658097711785492504343953926634992332820282019728792003956564819967
+  function p : int = 18446744069414584321
+  function trap_vector : int = 64
+  function red_len_max : int = 4096
+
+  (* Primary opcodes. ZMAC is op 0x18 with funct3 6, not its own op. *)
+  function op_add : int = 0
+  function op_sub : int = 1
+  function op_z : int = 24
+  function op_red : int = 25
+  function op_zld : int = 26
+  function op_zst : int = 27
+  function op_halt : int = 62
+  function op_ecall : int = 63
+  function funct3_zmac : int = 6
+  function funct3_modp : int = 7
+
+  function cause_misalign_pc : int = 1
+  function cause_illegal : int = 2
+  function cause_addr : int = 3
+  function cause_misalign_data : int = 4
+  function cause_overflow : int = 5
+  function cause_empty : int = 6
+  function cause_red_fault : int = 7
+  function cause_ecall : int = 9
+
+  predicate divides (d n : int) = exists q : int. n = q * d
+
+  predicate in_i64 (x : int) = min_i64 <= x /\ x <= max_i64
+
+  predicate z_in_range (z : int) = min_i256 <= z /\ z <= max_i256
+
+  predicate x0_zero (x : int -> int) = x 0 = 0
+
+  predicate pc_aligned (pc : int) =
+    0 <= pc /\ pc < two32 /\ divides 4 pc
+
+  predicate bits_fit64 (bits : int) = 0 <= bits /\ bits < two64
+
+  (* Low 64 bits of a mathematical integer, as an unsigned container. *)
+  predicate is_wrap64 (full bits : int) =
+    bits_fit64 bits /\ divides two64 (full - bits)
+
+  predicate high_half_clear (bits : int) = 0 <= bits /\ bits < two32
+
+  (*
+     Effective address: S is the 64-bit wrap of X[rs1] + sign-extended imm16.
+     If bits [63:32] of S are nonzero the access is cause 3.
+     Otherwise the physical address is the low 32 bits, which equal S.
+  *)
+  predicate eff_addr (base imm s : int) =
+    in_i64 base /\ -32768 <= imm /\ imm <= 32767 /\
+    is_wrap64 (base + imm) s
+
+  predicate eff_addr_ok (base imm phys : int) =
+    eff_addr base imm phys /\ high_half_clear phys /\ phys = phys
+
+  predicate jalr_target (base32 imm target : int) =
+    0 <= base32 /\ base32 < two32 /\
+    -32768 <= imm /\ imm <= 32767 /\
+    0 <= base32 + imm /\ base32 + imm < two32 /\
+    divides 4 target /\
+    0 <= (base32 + imm) - target /\ (base32 + imm) - target < 4
+
+  predicate same_map (a b : int -> int) =
+    forall i : int. a i = b i
+
+  predicate same_mem (m1 m2 : int -> int) =
+    forall a : int. m1 a = m2 a
+
+  (* Precise trap: no X, Z, or memory update. PC becomes the ROM vector. *)
+  predicate trap_writes_nothing
+    (pc cause : int)
+    (x z mem : int -> int)
+    (pc2 tcause tpc : int)
+    (x2 z2 mem2 : int -> int) =
+    pc_aligned pc /\
+    pc2 = trap_vector /\
+    tpc = pc /\
+    tcause = cause /\
+    same_map x x2 /\
+    same_map z z2 /\
+    same_mem mem mem2
+
+  predicate halt_is_not_a_trap (pc pc2 tcause tcause2 : int) =
+    pc2 = pc /\ tcause2 = tcause
+
+  predicate ecall_trap
+    (pc : int) (x z mem : int -> int)
+    (pc2 tcause tpc : int) (x2 z2 mem2 : int -> int) =
+    trap_writes_nothing pc cause_ecall x z mem pc2 tcause tpc x2 z2 mem2
+
+  predicate add_wrap (a b bits : int) =
+    in_i64 a /\ in_i64 b /\ is_wrap64 (a + b) bits
+
+  predicate zmac_sum (acc a b acc2 : int) =
+    z_in_range acc /\ in_i64 a /\ in_i64 b /\ acc2 = acc + a * b
+
+  predicate zmac_ok (acc a b acc2 : int) =
+    zmac_sum acc a b acc2 /\ z_in_range acc2
+
+  predicate zmac_traps (acc a b : int) =
+    z_in_range acc /\ in_i64 a /\ in_i64 b /\
+    not (z_in_range (acc + a * b))
+
+  val read_x (x : int -> int) (i : int) : int
+    requires { 0 <= i /\ i <= 31 }
+    ensures { i = 0 -> result = 0 }
+    ensures { i <> 0 -> result = x i }
+    ensures { in_i64 result }
+
+  val trap_to_vector (pc cause : int) (x z mem : int -> int) : int
+    requires { pc_aligned pc }
+    requires { 1 <= cause /\ cause <= 7 \/ cause = 9 }
+    ensures { result = trap_vector }
+
+end

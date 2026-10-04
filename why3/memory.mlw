@@ -1,0 +1,108 @@
+(* Why3 1.8.0 loaded this file. No proof is claimed except step_byte'vc, which the tool printed as Valid. *)
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+(* Copyright (C) 2026 Alapeno contributors *)
+(* The grant is AGPL-3.0-only and there is no MIT license. *)
+(*
+   Standalone memory, SRAM port, and DMA model.
+   Memory is a function from byte address to a byte in 0..255.
+   Depends only on int.Int. No float sort.
+*)
+
+module Memory
+
+  use int.Int
+
+  function rom_lo : int = 0
+  function rom_hi : int = 65535
+  function sram_lo : int = 268435456
+  function sram_hi : int = 268959743
+  function sram0_hi : int = 268697599
+  function sram1_lo : int = 268697600
+  function accel_lo : int = 536870912
+  function accel_hi : int = 536875007
+  function dma_lo : int = 805306368
+  function dma_hi : int = 805310463
+  function dma_len_max : int = 524288
+
+  predicate divides (d n : int) = exists q : int. n = q * d
+
+  predicate in_rom (a : int) = rom_lo <= a /\ a <= rom_hi
+
+  predicate in_sram (a : int) = sram_lo <= a /\ a <= sram_hi
+
+  predicate in_sram0 (a : int) = sram_lo <= a /\ a <= sram0_hi
+
+  predicate in_sram1 (a : int) = sram1_lo <= a /\ a <= sram_hi
+
+  predicate in_accel (a : int) = accel_lo <= a /\ a <= accel_hi
+
+  predicate in_dma (a : int) = dma_lo <= a /\ a <= dma_hi
+
+  (* Fetch permission is ROM or SRAM0 only. SRAM1 is data. *)
+  predicate executable (a : int) = in_rom a \/ in_sram0 a
+
+  predicate aligned (a k : int) = k > 0 /\ divides k a
+
+  predicate byte_ok (b : int) = 0 <= b /\ b <= 255
+
+  predicate mem_bytes (m : int -> int) =
+    forall a : int. byte_ok (m a)
+
+  predicate writable (a : int) =
+    in_sram a \/ in_accel a \/ in_dma a
+
+  predicate fetch_ok (pc : int) =
+    aligned pc 4 /\
+    executable pc /\ executable (pc + 1) /\
+    executable (pc + 2) /\ executable (pc + 3)
+
+  predicate range_in_sram (base len : int) =
+    len >= 1 /\
+    in_sram base /\
+    in_sram (base + len - 1) /\
+    base + len <= sram_hi + 1
+
+  predicate dma_stays_in_sram (src dst len : int) =
+    aligned src 8 /\ aligned dst 8 /\ aligned len 8 /\
+    1 <= len /\ len <= dma_len_max /\
+    range_in_sram src len /\
+    range_in_sram dst len
+
+  (*
+     Ascending byte copy, including overlap.
+     After i steps, address (dst + i - 1) holds the byte that step i read
+     from (src + i - 1) in the memory of the previous step.
+  *)
+  let rec function step_byte (before : int -> int) (src dst i a : int) : int
+    variant { i }
+    = if i <= 0 then before a
+      else if a = dst + i - 1
+        then step_byte before src dst (i - 1) (src + i - 1)
+        else step_byte before src dst (i - 1) a
+
+  predicate dma_ascending_copy
+      (before after : int -> int) (src dst len : int) =
+    dma_stays_in_sram src dst len /\
+    forall a : int. after a = step_byte before src dst len a
+
+  (* Same-cycle byte: Port A wins. A dropped Port B byte sets conflict. *)
+  predicate port_a_wins (a_writes b_writes stored a_data : int) =
+    a_writes = 1 /\ b_writes = 1 -> stored = a_data
+
+  predicate conflict_if_dropped (dropped sticky : int) =
+    dropped = 1 -> sticky = 1
+
+  predicate write_first (wrote stored read_data : int) =
+    wrote = 1 -> read_data = stored
+
+  (* An aligned group is atomic: every byte agrees with one writer. *)
+  predicate group_atomic (m : int -> int) (base width : int) =
+    aligned base width /\
+    forall i : int. 0 <= i /\ i < width -> byte_ok (m (base + i))
+
+  val dma_start_ok (src dst len accel_busy : int) : int
+    requires { accel_busy = 0 }
+    requires { dma_stays_in_sram src dst len }
+    ensures { result = 1 }
+
+end
