@@ -1,0 +1,227 @@
+(* Why3 1.8.0 loaded this file. Goal dot4'vc was printed Valid (0.01s, 311 steps) under -P Z3,4.13.3 -P CVC5,1.1.2 -t 10.
+   Predicates below are obligations a later RTL check can cite. No RTL satisfaction is claimed. *)
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+(* Copyright (C) 2026 Alapeno contributors *)
+(* The grant is AGPL-3.0-only and there is no MIT license. *)
+(*
+   Standalone Tile module for the frozen non-field MATMUL 4x4x4 compute tile.
+   Depends only on int.Int. No float sort. Does not claim RTL satisfaction.
+*)
+
+module Tile
+
+  use int.Int
+
+  function p : int = 18446744069414584321
+  function min_i64 : int = -9223372036854775808
+  function max_i64 : int = 9223372036854775807
+  function min_i256 : int =
+    -57896044618658097711785492504343953926634992332820282019728792003956564819968
+  function max_i256 : int =
+    57896044618658097711785492504343953926634992332820282019728792003956564819967
+  function sram_lo : int = 268435456
+  function sram_hi : int = 268959743
+  function accel_base : int = 536870912
+  function dma_base : int = 805306368
+
+  function op_matmul : int = 1
+  function zmac_op : int = 24
+  function zmac_funct3 : int = 6
+
+  function tile_m : int = 4
+  function tile_n : int = 4
+  function tile_k : int = 4
+  function width_a : int = 8
+  function width_b : int = 8
+  function width_c : int = 32
+  function ptr_a : int = 268435456
+  function ptr_b : int = 268435584
+  function ptr_c : int = 268435712
+  function ptr_c_copy : int = 268436480
+  function lda : int = 32
+  function ldb : int = 32
+  function ldc : int = 128
+  function bytes_a : int = 128
+  function bytes_b : int = 128
+  function bytes_c : int = 512
+  function mode_nonfield : int = 0
+
+  function lcga : int = 48271
+  function lcgm : int = 2147483647
+  function seed0 : int = 20261002
+  function radix : int = 5
+
+  predicate divides (d n : int) = exists q : int. n = q * d
+
+  predicate in_i64 (x : int) = min_i64 <= x /\ x <= max_i64
+
+  predicate in_i256 (z : int) = min_i256 <= z /\ z <= max_i256
+
+  predicate in_sram (a : int) = sram_lo <= a /\ a <= sram_hi
+
+  predicate aligned (a w : int) = w > 0 /\ divides w a
+
+  (* Seeded A row-major flat index 0..15. *)
+  function a_at (i : int) : int =
+    if i = 0 then 2 else if i = 1 then 4 else if i = 2 then 0 else if i = 3 then 0
+    else if i = 4 then 3 else if i = 5 then 3 else if i = 6 then 0 else if i = 7 then 4
+    else if i = 8 then 3 else if i = 9 then 3 else if i = 10 then 3 else if i = 11 then 2
+    else if i = 12 then 2 else if i = 13 then 1 else if i = 14 then 2 else if i = 15 then 0
+    else 0
+
+  (* Seeded B row-major flat index 0..15. *)
+  function b_at (i : int) : int =
+    if i = 0 then 1 else if i = 1 then 3 else if i = 2 then 2 else if i = 3 then 2
+    else if i = 4 then 4 else if i = 5 then 3 else if i = 6 then 2 else if i = 7 then 3
+    else if i = 8 then 0 else if i = 9 then 3 else if i = 10 then 2 else if i = 11 then 4
+    else if i = 12 then 2 else if i = 13 then 1 else if i = 14 then 0 else if i = 15 then 1
+    else 0
+
+  (* KNOWN product row-major flat index 0..15. *)
+  function c_known (i : int) : int =
+    if i = 0 then 18 else if i = 1 then 18 else if i = 2 then 12 else if i = 3 then 16
+    else if i = 4 then 23 else if i = 5 then 22 else if i = 6 then 12 else if i = 7 then 19
+    else if i = 8 then 19 else if i = 9 then 29 else if i = 10 then 18 else if i = 11 then 29
+    else if i = 12 then 6 else if i = 13 then 15 else if i = 14 then 10 else if i = 15 then 15
+    else 0
+
+  function a_el (r c : int) : int = a_at (r * tile_k + c)
+  function b_el (r c : int) : int = b_at (r * tile_n + c)
+  function c_el (r c : int) : int = c_known (r * tile_n + c)
+
+  let rec ghost function dot4 (r n k : int) : int
+    variant { k }
+  = if k <= 0 then 0
+    else dot4 r n (k - 1) + a_el r (k - 1) * b_el (k - 1) n
+
+  predicate tile_shape =
+    tile_m = 4 /\ tile_n = 4 /\ tile_k = 4 /\
+    width_a = 8 /\ width_b = 8 /\ width_c = 32 /\
+    lda = tile_k * width_a /\ ldb = tile_n * width_b /\
+    ldc = tile_n * width_c /\
+    bytes_a = tile_m * tile_k * width_a /\
+    bytes_b = tile_k * tile_n * width_b /\
+    bytes_c = tile_m * tile_n * width_c /\
+    aligned ptr_a width_a /\ aligned ptr_b width_b /\
+    aligned ptr_c width_c /\ aligned ptr_c_copy width_c /\
+    in_sram ptr_a /\ in_sram (ptr_a + bytes_a - 1) /\
+    in_sram ptr_b /\ in_sram (ptr_b + bytes_b - 1) /\
+    in_sram ptr_c /\ in_sram (ptr_c + bytes_c - 1) /\
+    in_sram ptr_c_copy /\ in_sram (ptr_c_copy + bytes_c - 1) /\
+    ptr_a + bytes_a <= ptr_b /\
+    ptr_b + bytes_b <= ptr_c /\
+    ptr_c + bytes_c <= ptr_c_copy
+
+  predicate tile_format_not_int8 =
+    width_a <> 1 /\ width_b <> 1 /\ width_c <> 1 /\
+    width_a = 8 /\ width_b = 8 /\ width_c = 32 /\
+    forall i : int. 0 <= i /\ i < 16 -> in_i64 (a_at i) /\ in_i64 (b_at i)
+
+  predicate tile_format_not_int32 =
+    width_a <> 4 /\ width_b <> 4 /\ width_c <> 4 /\
+    width_a = 8 /\ width_b = 8 /\ width_c = 32 /\
+    mode_nonfield = 0 /\
+    forall r n : int.
+      0 <= r /\ r < tile_m /\ 0 <= n /\ n < tile_n ->
+      in_i256 (dot4 r n tile_k)
+
+  predicate tile_prime =
+    p = 18446744069414584321 /\ p = 18446744073709551616 - 4294967296 + 1
+
+  predicate tile_zmac_encoding =
+    zmac_op = 24 /\ zmac_funct3 = 6
+
+  predicate tile_sram_window =
+    sram_lo = 268435456 /\ sram_hi = 268959743 /\
+    forall a : int. in_sram a <-> (sram_lo <= a /\ a <= sram_hi)
+
+  predicate tile_inputs_are_seeded =
+    lcga = 48271 /\ lcgm = 2147483647 /\ seed0 = 20261002 /\ radix = 5 /\
+    a_at 0 = 2 /\ a_at 1 = 4 /\ a_at 2 = 0 /\ a_at 3 = 0 /\
+    a_at 4 = 3 /\ a_at 5 = 3 /\ a_at 6 = 0 /\ a_at 7 = 4 /\
+    a_at 8 = 3 /\ a_at 9 = 3 /\ a_at 10 = 3 /\ a_at 11 = 2 /\
+    a_at 12 = 2 /\ a_at 13 = 1 /\ a_at 14 = 2 /\ a_at 15 = 0 /\
+    b_at 0 = 1 /\ b_at 1 = 3 /\ b_at 2 = 2 /\ b_at 3 = 2 /\
+    b_at 4 = 4 /\ b_at 5 = 3 /\ b_at 6 = 2 /\ b_at 7 = 3 /\
+    b_at 8 = 0 /\ b_at 9 = 3 /\ b_at 10 = 2 /\ b_at 11 = 4 /\
+    b_at 12 = 2 /\ b_at 13 = 1 /\ b_at 14 = 0 /\ b_at 15 = 1 /\
+    forall i : int. 0 <= i /\ i < 16 ->
+      0 <= a_at i /\ a_at i < radix /\
+      0 <= b_at i /\ b_at i < radix
+
+  predicate tile_output_is_known_product =
+    c_known 0 = 18 /\ c_known 1 = 18 /\ c_known 2 = 12 /\ c_known 3 = 16 /\
+    c_known 4 = 23 /\ c_known 5 = 22 /\ c_known 6 = 12 /\ c_known 7 = 19 /\
+    c_known 8 = 19 /\ c_known 9 = 29 /\ c_known 10 = 18 /\ c_known 11 = 29 /\
+    c_known 12 = 6 /\ c_known 13 = 15 /\ c_known 14 = 10 /\ c_known 15 = 15 /\
+    forall r n : int.
+      0 <= r /\ r < tile_m /\ 0 <= n /\ n < tile_n ->
+      c_el r n = dot4 r n tile_k /\
+      c_el r n = c_known (r * tile_n + n) /\
+      in_i256 (c_el r n)
+
+  predicate tile_overflow_faults_without_write
+    (dot_out_of_range fault_bit done_bit c_unchanged : int) =
+    (dot_out_of_range = 1 ->
+      fault_bit = 1 /\ done_bit = 0 /\ c_unchanged = 1) /\
+    (forall r n : int.
+       0 <= r /\ r < tile_m /\ 0 <= n /\ n < tile_n ->
+       in_i256 (dot4 r n tile_k))
+
+  (* 2^126. Extreme magnitude of a signed 64x64 product. *)
+  function prod_abs_max : int = 85070591730234615865843651857942052864
+
+  (* K * 2^126 fits in signed 256 for every K <= 2^129 - 1.
+     This tile has K = 4. Legal accelerator K is at most 64.
+     No signed-64 stimulus at those K values can raise the overflow fault. *)
+  predicate tile_k4_cannot_overflow =
+    tile_k = 4 /\
+    tile_k <= 64 /\
+    tile_k * prod_abs_max <= max_i256 /\
+    (- tile_k) * prod_abs_max >= min_i256
+
+  predicate tile_reset_clears_sram_and_status
+    (pc : int) (x z : int -> int) (sram : int -> int)
+    (accel_busy accel_done accel_fault : int)
+    (dma_busy dma_done dma_fault : int)
+    (rom_cleared : int) =
+    pc = 0 /\
+    (forall i : int. 0 <= i /\ i <= 31 -> x i = 0) /\
+    (forall i : int. 0 <= i /\ i <= 7 -> z i = 0) /\
+    (forall a : int. in_sram a -> sram a = 0) /\
+    accel_busy = 0 /\ accel_done = 0 /\ accel_fault = 0 /\
+    dma_busy = 0 /\ dma_done = 0 /\ dma_fault = 0 /\
+    rom_cleared = 0
+
+  (* After load via SD stores: element map at PTR_A/PTR_B matches seeds; C still 0. *)
+  predicate tile_load_places_operands (el : int -> int) (c_bytes : int -> int) =
+    bytes_a = 128 /\ bytes_b = 128 /\
+    ptr_a = 268435456 /\ ptr_b = 268435584 /\ ptr_c = 268435712 /\
+    (forall i : int. 0 <= i /\ i < 16 -> el (ptr_a + i) = a_at i) /\
+    (forall i : int. 0 <= i /\ i < 16 -> el (ptr_b + i) = b_at i) /\
+    (forall off : int. 0 <= off /\ off < bytes_c -> c_bytes (ptr_c + off) = 0)
+
+  predicate tile_execute_one_matmul
+    (op m n k mode pa pb pc sa sb sc ctrl_start : int) =
+    op = op_matmul /\ op = 1 /\
+    m = tile_m /\ n = tile_n /\ k = tile_k /\
+    m = 4 /\ n = 4 /\ k = 4 /\
+    mode = mode_nonfield /\ mode = 0 /\
+    pa = ptr_a /\ pb = ptr_b /\ pc = ptr_c /\
+    sa = lda /\ sb = ldb /\ sc = ldc /\
+    sa = 32 /\ sb = 32 /\ sc = 128 /\
+    ctrl_start = 1 /\
+    accel_base = 536870912
+
+  predicate tile_status_done (busy_bit done_bit fault_bit : int) =
+    busy_bit = 0 /\ done_bit = 1 /\ fault_bit = 0
+
+  predicate tile_store_copies_c
+    (src dst len ctrl : int) (c_src c_dst : int -> int) =
+    src = ptr_c /\ dst = ptr_c_copy /\ len = bytes_c /\
+    len = 512 /\ ctrl = 1 /\
+    dma_base = 805306368 /\
+    (forall i : int. 0 <= i /\ i < 16 ->
+      c_src i = c_known i /\ c_dst i = c_src i)
+
+end

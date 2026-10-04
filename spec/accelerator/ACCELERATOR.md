@@ -10,6 +10,11 @@ The scalar ISA is in `spec/isa/ISA.md`. SRAM ports, conflict, and DMA are in `sp
 
 The core must not take a trap because of an accelerator or DMA fault. Software starts an operation and polls STATUS.
 
+The first frozen compute-tile workload (non-field MATMUL with M = N = K = 4,
+seeded Sovereign Reduction Algebra operands, and the host command sequence
+reset / load / execute / status / store) is specified in `spec/accelerator/TILE.md`.
+TILE.md does not rewrite this contract; on any conflict this file wins.
+
 ## 1. Register map
 
 Base `0x20000000`. Each register is 32 bits, little-endian, and 4-byte aligned. The scalar core may touch one only with LW, LWU, or SW. Any other access size is a core trap, not an accelerator fault (MEMORY.md).
