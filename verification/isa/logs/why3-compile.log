@@ -1,0 +1,484 @@
+File "/workspace/alapeno/compiler/compile.mlw", line 105, characters 45-58:
+Sub-goal Precondition of goal imm16_bits'vc.
+Prover result is: Valid (0.00s, 14 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 158, character 6 to line 159, character 41:
+Sub-goal Postcondition of goal compile_zmac_then_halt'vc.
+Prover result is: Valid (0.00s, 6440 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 164, character 6 to line 165, character 40:
+Sub-goal Postcondition of goal compile_add_then_halt'vc.
+Prover result is: Valid (0.01s, 13081 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 170, character 6 to line 171, character 61:
+Sub-goal Postcondition of goal compile_mullo_then_add'vc.
+Prover result is: Valid (0.01s, 7451 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 175, characters 14-42:
+Sub-goal Postcondition of goal encode_add_x1_x2_x3'vc.
+Prover result is: Valid (0.01s, 17821 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 179, characters 14-72:
+Sub-goal Postcondition of goal z_funct3_table'vc.
+Prover result is: Valid (0.00s, 1898 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 180, characters 14-70:
+Sub-goal Postcondition of goal z_funct3_table'vc.
+Prover result is: Valid (0.00s, 1899 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 181, characters 14-27:
+Sub-goal Postcondition of goal z_funct3_table'vc.
+Prover result is: Valid (0.01s, 1900 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 185, characters 14-44:
+Sub-goal Postcondition of goal compiles_is_compile'vc.
+Prover result is: Valid (0.01s, 18245 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 203, characters 38-49:
+Sub-goal Precondition of goal low64'vc.
+Prover result is: Valid (0.01s, 1951 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 205, characters 41-59:
+Sub-goal Precondition of goal pc_add4'vc.
+Prover result is: Valid (0.01s, 1951 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 239, characters 12-22:
+Sub-goal Precondition of goal do_ld'vc.
+Prover result is: Valid (0.00s, 2084 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 248, characters 12-22:
+Sub-goal Precondition of goal do_sd'vc.
+Prover result is: Valid (0.00s, 2084 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 264, characters 12-34:
+Sub-goal Precondition of goal do_modp'vc.
+Prover result is: Valid (0.01s, 2053 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 271, characters 23-52:
+Sub-goal Variant decrease of goal elem_sum'vc.
+Prover result is: Valid (0.00s, 1998 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 271, characters 23-52:
+Sub-goal Precondition of goal elem_sum'vc.
+Prover result is: Valid (0.00s, 17842 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 278, characters 12-22:
+Sub-goal Precondition of goal do_red_sum'vc.
+Prover result is: Valid (0.00s, 2102 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 289, characters 16-39:
+Sub-goal Precondition of goal do_red_sum'vc.
+Prover result is: Valid (0.00s, 3200 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 329, characters 13-50:
+Sub-goal Variant decrease of goal exec_src'vc.
+Prover result is: Valid (0.00s, 1836 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 329, characters 13-50:
+Sub-goal Precondition of goal exec_src'vc.
+Prover result is: Valid (0.00s, 16155 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 340, characters 13-49:
+Sub-goal Variant decrease of goal exec_isa'vc.
+Prover result is: Valid (0.00s, 1840 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 340, characters 13-49:
+Sub-goal Precondition of goal exec_isa'vc.
+Prover result is: Valid (0.01s, 16985 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 344, character 14 to line 345, character 44:
+Sub-goal Postcondition of goal step_sadd'vc.
+Prover result is: Valid (0.01s, 41465 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 346, characters 14-44:
+Sub-goal Postcondition of goal step_sadd'vc.
+Prover result is: Valid (0.01s, 40748 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 347, characters 14-58:
+Sub-goal Postcondition of goal step_sadd'vc.
+Prover result is: Valid (0.01s, 41447 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 351, character 14 to line 352, character 45:
+Sub-goal Postcondition of goal step_saddi'vc.
+Prover result is: Valid (0.01s, 42758 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 353, characters 14-45:
+Sub-goal Postcondition of goal step_saddi'vc.
+Prover result is: Valid (0.01s, 41687 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 354, characters 14-59:
+Sub-goal Postcondition of goal step_saddi'vc.
+Prover result is: Valid (0.02s, 42198 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 358, character 14 to line 359, character 46:
+Sub-goal Postcondition of goal step_smullo'vc.
+Prover result is: Valid (0.01s, 43410 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 360, characters 14-46:
+Sub-goal Postcondition of goal step_smullo'vc.
+Prover result is: Valid (0.01s, 42388 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 361, characters 14-60:
+Sub-goal Postcondition of goal step_smullo'vc.
+Prover result is: Valid (0.01s, 42899 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 365, character 14 to line 366, character 43:
+Sub-goal Postcondition of goal step_sld'vc.
+Prover result is: Valid (0.02s, 44218 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 367, characters 14-43:
+Sub-goal Postcondition of goal step_sld'vc.
+Prover result is: Valid (0.02s, 43115 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 368, characters 14-57:
+Sub-goal Postcondition of goal step_sld'vc.
+Prover result is: Valid (0.00s, 43628 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 372, character 14 to line 373, character 44:
+Sub-goal Postcondition of goal step_ssd'vc.
+Prover result is: Valid (0.01s, 44916 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 374, characters 14-44:
+Sub-goal Postcondition of goal step_ssd'vc.
+Prover result is: Valid (0.02s, 43816 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 375, characters 14-58:
+Sub-goal Postcondition of goal step_ssd'vc.
+Prover result is: Valid (0.02s, 44331 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 379, character 14 to line 380, character 45:
+Sub-goal Postcondition of goal step_szmac'vc.
+Prover result is: Valid (0.01s, 45590 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 381, characters 14-45:
+Sub-goal Postcondition of goal step_szmac'vc.
+Prover result is: Valid (0.01s, 44517 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 382, characters 14-59:
+Sub-goal Postcondition of goal step_szmac'vc.
+Prover result is: Valid (0.02s, 45032 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 386, character 14 to line 387, character 40:
+Sub-goal Postcondition of goal step_smodp'vc.
+Prover result is: Valid (0.02s, 46332 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 388, characters 14-40:
+Sub-goal Postcondition of goal step_smodp'vc.
+Prover result is: Valid (0.01s, 45231 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 389, characters 14-54:
+Sub-goal Postcondition of goal step_smodp'vc.
+Prover result is: Valid (0.01s, 45742 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 393, character 14 to line 394, character 47:
+Sub-goal Postcondition of goal step_sred'vc.
+Prover result is: Valid (0.01s, 47288 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 395, characters 14-47:
+Sub-goal Postcondition of goal step_sred'vc.
+Prover result is: Valid (0.01s, 45945 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 396, characters 14-61:
+Sub-goal Postcondition of goal step_sred'vc.
+Prover result is: Valid (0.02s, 46464 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 400, characters 14-63:
+Sub-goal Postcondition of goal step_shalt'vc.
+Prover result is: Valid (0.02s, 44339 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 401, characters 14-28:
+Sub-goal Postcondition of goal step_shalt'vc.
+Prover result is: Valid (0.01s, 42759 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 402, characters 14-42:
+Sub-goal Postcondition of goal step_shalt'vc.
+Prover result is: Valid (0.00s, 43173 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 403, characters 14-33:
+Sub-goal Postcondition of goal step_shalt'vc.
+Prover result is: Valid (0.01s, 43376 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 408, characters 14-25:
+Sub-goal Postcondition of goal low64_small'vc.
+Prover result is: Valid (0.01s, 52909 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 412, characters 14-54:
+Sub-goal Postcondition of goal x0_after_add_x0'vc.
+Prover result is: Valid (0.01s, 47674 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 413, characters 14-50:
+Sub-goal Postcondition of goal x0_after_add_x0'vc.
+Prover result is: Valid (0.02s, 48820 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 417, characters 14-54:
+Sub-goal Postcondition of goal x0_after_add_x1'vc.
+Prover result is: Valid (0.01s, 48189 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 423, characters 14-54:
+Sub-goal Postcondition of goal add_wrap_not_a_trap'vc.
+Prover result is: Valid (0.02s, 52242 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 424, characters 14-64:
+Sub-goal Postcondition of goal add_wrap_not_a_trap'vc.
+Prover result is: Valid (0.01s, 44424 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 425, characters 14-56:
+Sub-goal Postcondition of goal add_wrap_not_a_trap'vc.
+Prover result is: Valid (0.02s, 45692 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 426, characters 14-50:
+Sub-goal Postcondition of goal add_wrap_not_a_trap'vc.
+Prover result is: Valid (0.02s, 45847 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 427, characters 14-56:
+Sub-goal Postcondition of goal add_wrap_not_a_trap'vc.
+Prover result is: Valid (0.02s, 45846 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 434, characters 14-56:
+Sub-goal Postcondition of goal zmac_worked'vc.
+Prover result is: Valid (0.02s, 48784 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 435, character 14 to line 437, character 55:
+Sub-goal Postcondition of goal zmac_worked'vc.
+Prover result is: Valid (0.01s, 48658 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 438, characters 14-57:
+Sub-goal Postcondition of goal zmac_worked'vc.
+Prover result is: Valid (0.00s, 49354 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 443, characters 14-57:
+Sub-goal Postcondition of goal modp_neg_one'vc.
+Prover result is: Valid (0.01s, 50988 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 444, characters 14-72:
+Sub-goal Postcondition of goal modp_neg_one'vc.
+Prover result is: Valid (0.00s, 5238 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 449, characters 14-53:
+Sub-goal Postcondition of goal modp_zero'vc.
+Prover result is: Valid (0.02s, 51741 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 454, characters 14-53:
+Sub-goal Postcondition of goal modp_p'vc.
+Prover result is: Valid (0.01s, 52129 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 459, characters 14-53:
+Sub-goal Postcondition of goal modp_p_plus_5'vc.
+Prover result is: Valid (0.01s, 59910 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 465, characters 14-57:
+Sub-goal Postcondition of goal red_len0'vc.
+Prover result is: Valid (0.01s, 61175 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 466, characters 14-59:
+Sub-goal Postcondition of goal red_len0'vc.
+Prover result is: Valid (0.02s, 61378 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 474, characters 14-64:
+Sub-goal Postcondition of goal red_two_word_sum'vc.
+Prover result is: Valid (0.02s, 65509 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 475, character 14 to line 476, character 67:
+Sub-goal Postcondition of goal red_two_word_sum'vc.
+Prover result is: Valid (0.03s, 54735 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 480, characters 14-71:
+Sub-goal Postcondition of goal elem_sum_len2'vc.
+Prover result is: Valid (0.02s, 54729 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 490, character 6 to line 491, character 50:
+Sub-goal Postcondition of goal exec_at_add'vc.
+Prover result is: Valid (0.04s, 133319 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 501, character 6 to line 502, character 51:
+Sub-goal Postcondition of goal exec_at_addi'vc.
+Prover result is: Valid (0.04s, 129710 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 512, character 6 to line 513, character 52:
+Sub-goal Postcondition of goal exec_at_mullo'vc.
+Prover result is: Valid (0.05s, 134671 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 523, character 6 to line 524, character 49:
+Sub-goal Postcondition of goal exec_at_ld'vc.
+Prover result is: Valid (0.05s, 134616 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 534, character 6 to line 535, character 50:
+Sub-goal Postcondition of goal exec_at_sd'vc.
+Prover result is: Valid (0.03s, 134732 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 545, character 6 to line 546, character 51:
+Sub-goal Postcondition of goal exec_at_zmac'vc.
+Prover result is: Valid (0.05s, 150229 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 556, character 6 to line 557, character 46:
+Sub-goal Postcondition of goal exec_at_modp'vc.
+Prover result is: Valid (0.04s, 129102 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 567, character 6 to line 568, character 53:
+Sub-goal Postcondition of goal exec_at_red'vc.
+Prover result is: Valid (0.05s, 163316 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 573, characters 14-44:
+Sub-goal Postcondition of goal exec_halt_stops'vc.
+Prover result is: Valid (0.02s, 65334 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 582, characters 13-50:
+Sub-goal Precondition of goal exec_at_halt'vc.
+Prover result is: Valid (0.01s, 6935 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 583, characters 21-64:
+Sub-goal Precondition of goal exec_at_halt'vc.
+Prover result is: Valid (0.00s, 6939 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 579, character 6 to line 580, character 38:
+Sub-goal Postcondition of goal exec_at_halt'vc.
+Prover result is: Valid (0.02s, 74881 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 587, characters 14-55:
+Sub-goal Postcondition of goal exec_at_zero'vc.
+Prover result is: Valid (0.01s, 66401 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 592, characters 14-71:
+Sub-goal Postcondition of goal exec_at_nil'vc.
+Prover result is: Valid (0.02s, 65314 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 601, characters 13-28:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 7027 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 605, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 605, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 606, characters 12-43:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 606, characters 12-43:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 608, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 608, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 609, characters 12-44:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 609, characters 12-44:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 611, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 611, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 612, characters 12-45:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 612, characters 12-45:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 614, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 614, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 615, characters 12-42:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 615, characters 12-42:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 617, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 617, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 618, characters 12-43:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 618, characters 12-43:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 620, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 620, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 621, characters 12-44:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 621, characters 12-44:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 623, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 19798 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 623, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 65820 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 624, characters 12-39:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 66625 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 624, characters 12-39:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 626, characters 12-56:
+Sub-goal Variant decrease of goal compile_exec_eq'vc.
+Prover result is: Valid (0.00s, 19802 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 626, characters 12-56:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 65824 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 627, characters 12-43:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 66634 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 627, characters 12-43:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 6547 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 628, characters 19-40:
+Sub-goal Precondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.01s, 65784 steps).
+
+File "/workspace/alapeno/compiler/compile.mlw", line 598, characters 14-55:
+Sub-goal Postcondition of goal compile_exec_eq'vc.
+Prover result is: Valid (0.02s, 81195 steps).
+

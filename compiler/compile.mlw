@@ -1,0 +1,632 @@
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+
+(* Why3 relation from a straight-line source program to the integer ISA
+   in spec/isa/ISA.md. Numeric meaning follows spec/arithmetic/ARITHMETIC.md.
+   Mathematical integers only. No floating-point sort.
+
+   X0..X31 are 64-bit containers in [0, 2^64). The signed view sx is
+   two's complement. The unsigned view ux is the container. X0 reads as 0
+   and a write to X0 is ignored. Z0..Z7 are mathematical integers that
+   must stay in signed 256, [-2^255, 2^255-1]. They do not wrap: a result
+   outside that range traps with cause 5 and leaves Z unchanged.
+   MODP uses Euclidean division (Why3 mod): the residue is the unique r
+   in [0, p) such that z - r is divisible by p. A residue is stored as
+   that mathematical integer, so limbs 1..3 of the 256-bit encoding are 0.
+
+   Permission, alignment, and fetch traps are specified in ISA.md and in
+   spec/memory/MEMORY.md. SRAM is the inclusive window 0x10000000 through
+   0x1007FFFF. This model uses a flat map from an 8-byte address to one
+   signed 64-bit little-endian element. Successful LD, SD, and RED.SUM
+   examples sit in that window. Addresses outside it are not treated as
+   SRAM. ROM, the hole, MMIO, and region-crossing checks are not all
+   proved. RED.SUM is the mathematical sum of signed elements with stride
+   8, never a wrapping 64-bit add. Proved reduction examples are length 0
+   and length 2. *)
+
+module Compile
+
+  use int.Int
+  use int.EuclideanDivision
+  use list.List
+  use map.Map
+
+  let constant p : int = 18446744069414584321
+  let constant two63m1 : int = 9223372036854775807
+  let constant two63 : int = 9223372036854775808
+  let constant min_i64 : int = -9223372036854775808
+  let constant two64 : int = 18446744073709551616
+  let constant two32 : int = 4294967296
+  let constant max_i256 : int =
+    57896044618658097711785492504343953926634992332820282019728792003956564819967
+  let constant min_i256 : int =
+    -57896044618658097711785492504343953926634992332820282019728792003956564819968
+
+  (* SRAM window 0x10000000 .. 0x1007FFFF inclusive. *)
+  let constant sram_lo : int = 268435456
+  let constant sram_hi : int = 268959743
+  let constant trap_pc : int = 64 (* 0x40 *)
+
+  let constant op_add : int = 0      (* 0x00 *)
+  let constant op_mul_lo : int = 12  (* 0x0C *)
+  let constant op_addi : int = 16    (* 0x10 *)
+  let constant op_z : int = 24       (* 0x18 *)
+  let constant op_red : int = 25     (* 0x19 *)
+  let constant op_ld : int = 32      (* 0x20 *)
+  let constant op_sd : int = 40      (* 0x28 *)
+  let constant op_halt : int = 62    (* 0x3E *)
+
+  let constant f3_zclr : int = 0
+  let constant f3_zsext : int = 1
+  let constant f3_zlimb : int = 2
+  let constant f3_zfit : int = 3
+  let constant f3_zadd : int = 4
+  let constant f3_zsub : int = 5
+  let constant f3_zmac : int = 6
+  let constant f3_modp : int = 7
+  let constant f_red_sum : int = 0
+
+  let constant two8 : int = 256
+  let constant two11 : int = 2048
+  let constant two16 : int = 65536
+  let constant two21 : int = 2097152
+  let constant two26 : int = 67108864
+
+  type instr =
+    | Add int int int
+    | Addi int int int
+    | MulLo int int int
+    | Ld int int int
+    | Sd int int int
+    | ZMac int int int
+    | ModP int int
+    | RedSum int int int
+    | Halt
+
+  type src =
+    | SAdd int int int
+    | SAddi int int int
+    | SMulLo int int int
+    | SLd int int int
+    | SSd int int int
+    | SZMac int int int
+    | SModP int int
+    | SRedSum int int int
+    | SHalt
+
+  type state = {
+    pc: int;
+    x: map int int;
+    z: map int int;
+    tcause: int;
+    tpc: int;
+    mem: map int int;
+  }
+
+  let function imm16_bits (imm: int) : int = mod imm two16
+
+  (* Section 3. ADD x1, x2, x3 is word 0x00221800. *)
+  let function encode (i: instr) : int =
+    match i with
+    | Add rd rs1 rs2 ->
+        op_add * two26 + rd * two21 + rs1 * two16 + rs2 * two11
+    | Addi rd rs1 imm ->
+        op_addi * two26 + rd * two21 + rs1 * two16 + imm16_bits imm
+    | MulLo rd rs1 rs2 ->
+        op_mul_lo * two26 + rd * two21 + rs1 * two16 + rs2 * two11
+    | Ld rd rs1 imm ->
+        op_ld * two26 + rd * two21 + rs1 * two16 + imm16_bits imm
+    | Sd rs2 rs1 imm ->
+        op_sd * two26 + rs2 * two21 + rs1 * two16 + imm16_bits imm
+    | ZMac zd xs1 xs2 ->
+        op_z * two26 + zd * two21 + xs1 * two16 + xs2 * two11
+          + f3_zmac * two8
+    | ModP zd zs ->
+        op_z * two26 + zd * two21 + zs * two16 + f3_modp * two8
+    | RedSum zd rs1 rs2 ->
+        op_red * two26 + zd * two21 + rs1 * two16 + rs2 * two11
+          + f_red_sum
+    | Halt ->
+        op_halt * two26
+    end
+
+  let function compile_one (op: src) : instr =
+    match op with
+    | SAdd rd rs1 rs2 -> Add rd rs1 rs2
+    | SAddi rd rs1 imm -> Addi rd rs1 imm
+    | SMulLo rd rs1 rs2 -> MulLo rd rs1 rs2
+    | SLd rd rs1 imm -> Ld rd rs1 imm
+    | SSd rs2 rs1 imm -> Sd rs2 rs1 imm
+    | SZMac zd xs1 xs2 -> ZMac zd xs1 xs2
+    | SModP zd zs -> ModP zd zs
+    | SRedSum zd rs1 rs2 -> RedSum zd rs1 rs2
+    | SHalt -> Halt
+    end
+
+  (* Map each source op. Append Halt only when the source did not end
+     with one. An empty program is a single Halt. *)
+  let rec function compile (p: list src) : list instr =
+    match p with
+    | Nil -> Cons Halt Nil
+    | Cons SHalt Nil -> Cons Halt Nil
+    | Cons op rest -> Cons (compile_one op) (compile rest)
+    end
+
+  predicate compiles (p: list src) (c: list instr) = c = compile p
+
+  let lemma compile_zmac_then_halt ()
+    ensures {
+      compile (Cons (SZMac 0 1 2) (Cons SHalt Nil))
+      = Cons (ZMac 0 1 2) (Cons Halt Nil) }
+  = ()
+
+  let lemma compile_add_then_halt ()
+    ensures {
+      compile (Cons (SAdd 4 1 5) Nil)
+      = Cons (Add 4 1 5) (Cons Halt Nil) }
+  = ()
+
+  let lemma compile_mullo_then_add ()
+    ensures {
+      compile (Cons (SMulLo 1 2 3) (Cons (SAdd 4 1 5) Nil))
+      = Cons (MulLo 1 2 3) (Cons (Add 4 1 5) (Cons Halt Nil)) }
+  = ()
+
+  let lemma encode_add_x1_x2_x3 ()
+    ensures { encode (Add 1 2 3) = 2234368 }
+  = ()
+
+  let lemma z_funct3_table ()
+    ensures { f3_zclr = 0 /\ f3_zsext = 1 /\ f3_zlimb = 2 /\ f3_zfit = 3 }
+    ensures { f3_zadd = 4 /\ f3_zsub = 5 /\ f3_zmac = 6 /\ f3_modp = 7 }
+    ensures { f_red_sum = 0 }
+  = ()
+
+  let lemma compiles_is_compile (p: list src) (c: list instr)
+    ensures { compiles p c <-> c = compile p }
+  = ()
+
+  predicate src_halt (op: src) =
+    match op with SHalt -> true | _ -> false end
+
+  predicate isa_halt (i: instr) =
+    match i with Halt -> true | _ -> false end
+
+  let function get_x (s: state) (i: int) : int =
+    if i = 0 then 0 else Map.get s.x i
+
+  let ghost function write_x (s: state) (rd v: int) : state =
+    if rd = 0 then s else { s with x = Map.set s.x rd v }
+
+  let function sx_of (u: int) : int =
+    if u >= two63 then u - two64 else u
+
+  let function low64 (v: int) : int = mod v two64
+
+  let function pc_add4 (pc: int) : int = mod (pc + 4) two32
+
+  (* A trap writes nothing, then sets tpc, tcause, and PC = 0x40. *)
+  let function trap (s: state) (cause: int) : state =
+    { s with tpc = s.pc; tcause = cause; pc = trap_pc }
+
+  let function sext16 (imm: int) : int =
+    let b = imm16_bits imm in
+    if b >= 32768 then b - two16 else b
+
+  let function eff_addr (base_u imm: int) : int =
+    low64 (base_u + sext16 imm)
+
+  let function word_in_sram (a: int) : bool =
+    sram_lo <= a && a + 7 <= sram_hi
+
+  let ghost function do_add (s: state) (rd rs1 rs2: int) : state =
+    let sum = sx_of (get_x s rs1) + sx_of (get_x s rs2) in
+    let s1 = write_x s rd (low64 sum) in
+    { s1 with pc = pc_add4 s.pc }
+
+  let ghost function do_addi (s: state) (rd rs1 imm: int) : state =
+    let sum = sx_of (get_x s rs1) + sext16 imm in
+    let s1 = write_x s rd (low64 sum) in
+    { s1 with pc = pc_add4 s.pc }
+
+  let ghost function do_mul_lo (s: state) (rd rs1 rs2: int) : state =
+    let prod = sx_of (get_x s rs1) * sx_of (get_x s rs2) in
+    let s1 = write_x s rd (low64 prod) in
+    { s1 with pc = pc_add4 s.pc }
+
+  let ghost function do_ld (s: state) (rd rs1 imm: int) : state =
+    let addr = eff_addr (get_x s rs1) imm in
+    if addr >= two32 then trap s 3
+    else if mod addr 8 <> 0 then trap s 4
+    else if not word_in_sram addr then trap s 3
+    else
+      let s1 = write_x s rd (low64 (Map.get s.mem addr)) in
+      { s1 with pc = pc_add4 s.pc }
+
+  let ghost function do_sd (s: state) (rs2 rs1 imm: int) : state =
+    let addr = eff_addr (get_x s rs1) imm in
+    if addr >= two32 then trap s 3
+    else if mod addr 8 <> 0 then trap s 4
+    else if not word_in_sram addr then trap s 3
+    else
+      { s with
+          mem = Map.set s.mem addr (sx_of (get_x s rs2));
+          pc = pc_add4 s.pc }
+
+  let ghost function do_zmac (s: state) (zd xs1 xs2: int) : state =
+    if zd < 0 || zd > 7 then trap s 2 else
+    let sum = Map.get s.z zd
+              + sx_of (get_x s xs1) * sx_of (get_x s xs2) in
+    if sum < min_i256 || sum > max_i256 then trap s 5 else
+    { s with z = Map.set s.z zd sum; pc = pc_add4 s.pc }
+
+  let ghost function do_modp (s: state) (zd zs: int) : state =
+    if zd < 0 || zd > 7 || zs < 0 || zs > 7 then trap s 2 else
+    let r = mod (Map.get s.z zs) p in
+    { s with z = Map.set s.z zd r; pc = pc_add4 s.pc }
+
+  let rec function elem_sum (m: map int int) (base n: int) : int
+    requires { n >= 0 }
+    variant { n }
+  = if n = 0 then 0 else
+      Map.get m base + elem_sum m (base + 8) (n - 1)
+
+  let ghost function do_red_sum (s: state) (zd rs1 rs2: int) : state =
+    let len = get_x s rs2 in
+    let base = get_x s rs1 in
+    if zd < 0 || zd > 7 then trap s 2
+    else if base < 0 || base >= two32 then trap s 3
+    else if mod base 8 <> 0 then trap s 4
+    else if len < 0 || len > 4096 then trap s 7
+    else if len = 0 then
+      { s with z = Map.set s.z zd 0; pc = pc_add4 s.pc }
+    else if not (sram_lo <= base && base + 8 * len - 1 <= sram_hi) then
+      trap s 3
+    else if len = 2 then
+      let sum = Map.get s.mem base + Map.get s.mem (base + 8) in
+      if sum < min_i256 || sum > max_i256 then trap s 5 else
+      { s with z = Map.set s.z zd sum; pc = pc_add4 s.pc }
+    else
+      let sum = elem_sum s.mem base len in
+      if sum < min_i256 || sum > max_i256 then trap s 5 else
+      { s with z = Map.set s.z zd sum; pc = pc_add4 s.pc }
+
+  let function do_halt (s: state) : state = s
+
+  let ghost function step_src (s: state) (op: src) : state =
+    match op with
+    | SAdd rd rs1 rs2 -> do_add s rd rs1 rs2
+    | SAddi rd rs1 imm -> do_addi s rd rs1 imm
+    | SMulLo rd rs1 rs2 -> do_mul_lo s rd rs1 rs2
+    | SLd rd rs1 imm -> do_ld s rd rs1 imm
+    | SSd rs2 rs1 imm -> do_sd s rs2 rs1 imm
+    | SZMac zd xs1 xs2 -> do_zmac s zd xs1 xs2
+    | SModP zd zs -> do_modp s zd zs
+    | SRedSum zd rs1 rs2 -> do_red_sum s zd rs1 rs2
+    | SHalt -> do_halt s
+    end
+
+  let ghost function step_isa (s: state) (i: instr) : state =
+    match i with
+    | Add rd rs1 rs2 -> do_add s rd rs1 rs2
+    | Addi rd rs1 imm -> do_addi s rd rs1 imm
+    | MulLo rd rs1 rs2 -> do_mul_lo s rd rs1 rs2
+    | Ld rd rs1 imm -> do_ld s rd rs1 imm
+    | Sd rs2 rs1 imm -> do_sd s rs2 rs1 imm
+    | ZMac zd xs1 xs2 -> do_zmac s zd xs1 xs2
+    | ModP zd zs -> do_modp s zd zs
+    | RedSum zd rs1 rs2 -> do_red_sum s zd rs1 rs2
+    | Halt -> do_halt s
+    end
+
+  let rec ghost function exec_src (n: int) (p: list src) (s: state) : state
+    requires { n >= 0 }
+    variant { n }
+  = if n = 0 then s else
+    match p with
+    | Nil -> s
+    | Cons op rest ->
+        if src_halt op then step_src s op
+        else exec_src (n - 1) rest (step_src s op)
+    end
+
+  let rec ghost function exec_isa (n: int) (c: list instr) (s: state) : state
+    requires { n >= 0 }
+    variant { n }
+  = if n = 0 then s else
+    match c with
+    | Nil -> s
+    | Cons i rest ->
+        if isa_halt i then step_isa s i
+        else exec_isa (n - 1) rest (step_isa s i)
+    end
+
+  let lemma step_sadd (s: state) (rd rs1 rs2: int)
+    ensures { step_isa s (compile_one (SAdd rd rs1 rs2))
+              = step_src s (SAdd rd rs1 rs2) }
+    ensures { not src_halt (SAdd rd rs1 rs2) }
+    ensures { not isa_halt (compile_one (SAdd rd rs1 rs2)) }
+  = ()
+
+  let lemma step_saddi (s: state) (rd rs1: int) (imm: int)
+    ensures { step_isa s (compile_one (SAddi rd rs1 imm))
+              = step_src s (SAddi rd rs1 imm) }
+    ensures { not src_halt (SAddi rd rs1 imm) }
+    ensures { not isa_halt (compile_one (SAddi rd rs1 imm)) }
+  = ()
+
+  let lemma step_smullo (s: state) (rd rs1 rs2: int)
+    ensures { step_isa s (compile_one (SMulLo rd rs1 rs2))
+              = step_src s (SMulLo rd rs1 rs2) }
+    ensures { not src_halt (SMulLo rd rs1 rs2) }
+    ensures { not isa_halt (compile_one (SMulLo rd rs1 rs2)) }
+  = ()
+
+  let lemma step_sld (s: state) (rd rs1: int) (imm: int)
+    ensures { step_isa s (compile_one (SLd rd rs1 imm))
+              = step_src s (SLd rd rs1 imm) }
+    ensures { not src_halt (SLd rd rs1 imm) }
+    ensures { not isa_halt (compile_one (SLd rd rs1 imm)) }
+  = ()
+
+  let lemma step_ssd (s: state) (rs2 rs1: int) (imm: int)
+    ensures { step_isa s (compile_one (SSd rs2 rs1 imm))
+              = step_src s (SSd rs2 rs1 imm) }
+    ensures { not src_halt (SSd rs2 rs1 imm) }
+    ensures { not isa_halt (compile_one (SSd rs2 rs1 imm)) }
+  = ()
+
+  let lemma step_szmac (s: state) (zd xs1 xs2: int)
+    ensures { step_isa s (compile_one (SZMac zd xs1 xs2))
+              = step_src s (SZMac zd xs1 xs2) }
+    ensures { not src_halt (SZMac zd xs1 xs2) }
+    ensures { not isa_halt (compile_one (SZMac zd xs1 xs2)) }
+  = ()
+
+  let lemma step_smodp (s: state) (zd zs: int)
+    ensures { step_isa s (compile_one (SModP zd zs))
+              = step_src s (SModP zd zs) }
+    ensures { not src_halt (SModP zd zs) }
+    ensures { not isa_halt (compile_one (SModP zd zs)) }
+  = ()
+
+  let lemma step_sred (s: state) (zd rs1 rs2: int)
+    ensures { step_isa s (compile_one (SRedSum zd rs1 rs2))
+              = step_src s (SRedSum zd rs1 rs2) }
+    ensures { not src_halt (SRedSum zd rs1 rs2) }
+    ensures { not isa_halt (compile_one (SRedSum zd rs1 rs2)) }
+  = ()
+
+  let lemma step_shalt (s: state)
+    ensures { step_isa s (compile_one SHalt) = step_src s SHalt }
+    ensures { src_halt SHalt }
+    ensures { isa_halt (compile_one SHalt) }
+    ensures { step_isa s Halt = s }
+  = ()
+
+  let lemma low64_small (v: int)
+    requires { 0 <= v < two64 }
+    ensures { low64 v = v }
+  = ()
+
+  let lemma x0_after_add_x0 (s: state) (rs1 rs2: int)
+    ensures { get_x (step_isa s (Add 0 rs1 rs2)) 0 = 0 }
+    ensures { (step_isa s (Add 0 rs1 rs2)).x = s.x }
+  = ()
+
+  let lemma x0_after_add_x1 (s: state) (rs1 rs2: int)
+    ensures { get_x (step_isa s (Add 1 rs1 rs2)) 0 = 0 }
+  = ()
+
+  let lemma add_wrap_not_a_trap (s: state)
+    requires { get_x s 2 = two63m1 }
+    requires { get_x s 3 = 1 }
+    ensures { get_x (step_isa s (Add 1 2 3)) 1 = two63 }
+    ensures { sx_of (get_x (step_isa s (Add 1 2 3)) 1) = min_i64 }
+    ensures { (step_isa s (Add 1 2 3)).tcause = s.tcause }
+    ensures { (step_isa s (Add 1 2 3)).tpc = s.tpc }
+    ensures { (step_isa s (Add 1 2 3)).pc = pc_add4 s.pc }
+  = ()
+
+  let lemma zmac_worked (s: state)
+    requires { Map.get s.z 0 = 10 }
+    requires { get_x s 1 = 3 }
+    requires { get_x s 2 = 5 }
+    ensures { Map.get (step_isa s (ZMac 0 1 2)).z 0 = 25 }
+    ensures { Map.get (step_isa s (ZMac 0 1 2)).z 0
+              = Map.get s.z 0
+                + sx_of (get_x s 1) * sx_of (get_x s 2) }
+    ensures { (step_isa s (ZMac 0 1 2)).tcause = s.tcause }
+  = ()
+
+  let lemma modp_neg_one (s: state)
+    requires { Map.get s.z 1 = -1 }
+    ensures { Map.get (step_isa s (ModP 0 1)).z 0 = p - 1 }
+    ensures { Map.get (step_isa s (ModP 0 1)).z 0 = 18446744069414584320 }
+  = ()
+
+  let lemma modp_zero (s: state)
+    requires { Map.get s.z 1 = 0 }
+    ensures { Map.get (step_isa s (ModP 0 1)).z 0 = 0 }
+  = ()
+
+  let lemma modp_p (s: state)
+    requires { Map.get s.z 1 = p }
+    ensures { Map.get (step_isa s (ModP 0 1)).z 0 = 0 }
+  = ()
+
+  let lemma modp_p_plus_5 (s: state)
+    requires { Map.get s.z 1 = p + 5 }
+    ensures { Map.get (step_isa s (ModP 0 1)).z 0 = 5 }
+  = ()
+
+  let lemma red_len0 (s: state)
+    requires { get_x s 1 = sram_lo }
+    requires { get_x s 2 = 0 }
+    ensures { Map.get (step_isa s (RedSum 3 1 2)).z 3 = 0 }
+    ensures { (step_isa s (RedSum 3 1 2)).tcause = s.tcause }
+  = ()
+
+  let lemma red_two_word_sum (s: state)
+    requires { get_x s 1 = sram_lo }
+    requires { get_x s 2 = 2 }
+    requires { Map.get s.mem sram_lo = 5 }
+    requires { Map.get s.mem (sram_lo + 8) = -3 }
+    ensures { Map.get (step_isa s (RedSum 0 1 2)).z 0 = 5 + (-3) }
+    ensures { Map.get (step_src s (SRedSum 0 1 2)).z 0
+              = Map.get s.mem sram_lo + Map.get s.mem (sram_lo + 8) }
+  = ()
+
+  let lemma elem_sum_len2 (m: map int int) (base: int)
+    ensures { elem_sum m base 2 = Map.get m base + Map.get m (base + 8) }
+  = ()
+
+  let ghost lemma exec_at_add (rd rs1 rs2: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SAdd rd rs1 rs2))
+      = exec_src (n - 1) rest (step_src s (SAdd rd rs1 rs2)) }
+    ensures {
+      exec_isa n (compile (Cons (SAdd rd rs1 rs2) rest)) s
+      = exec_src n (Cons (SAdd rd rs1 rs2) rest) s }
+  = ()
+
+  let ghost lemma exec_at_addi (rd rs1 imm: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SAddi rd rs1 imm))
+      = exec_src (n - 1) rest (step_src s (SAddi rd rs1 imm)) }
+    ensures {
+      exec_isa n (compile (Cons (SAddi rd rs1 imm) rest)) s
+      = exec_src n (Cons (SAddi rd rs1 imm) rest) s }
+  = ()
+
+  let ghost lemma exec_at_mullo (rd rs1 rs2: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SMulLo rd rs1 rs2))
+      = exec_src (n - 1) rest (step_src s (SMulLo rd rs1 rs2)) }
+    ensures {
+      exec_isa n (compile (Cons (SMulLo rd rs1 rs2) rest)) s
+      = exec_src n (Cons (SMulLo rd rs1 rs2) rest) s }
+  = ()
+
+  let ghost lemma exec_at_ld (rd rs1 imm: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SLd rd rs1 imm))
+      = exec_src (n - 1) rest (step_src s (SLd rd rs1 imm)) }
+    ensures {
+      exec_isa n (compile (Cons (SLd rd rs1 imm) rest)) s
+      = exec_src n (Cons (SLd rd rs1 imm) rest) s }
+  = ()
+
+  let ghost lemma exec_at_sd (rs2 rs1 imm: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SSd rs2 rs1 imm))
+      = exec_src (n - 1) rest (step_src s (SSd rs2 rs1 imm)) }
+    ensures {
+      exec_isa n (compile (Cons (SSd rs2 rs1 imm) rest)) s
+      = exec_src n (Cons (SSd rs2 rs1 imm) rest) s }
+  = ()
+
+  let ghost lemma exec_at_zmac (zd xs1 xs2: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SZMac zd xs1 xs2))
+      = exec_src (n - 1) rest (step_src s (SZMac zd xs1 xs2)) }
+    ensures {
+      exec_isa n (compile (Cons (SZMac zd xs1 xs2) rest)) s
+      = exec_src n (Cons (SZMac zd xs1 xs2) rest) s }
+  = ()
+
+  let ghost lemma exec_at_modp (zd zs: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SModP zd zs))
+      = exec_src (n - 1) rest (step_src s (SModP zd zs)) }
+    ensures {
+      exec_isa n (compile (Cons (SModP zd zs) rest)) s
+      = exec_src n (Cons (SModP zd zs) rest) s }
+  = ()
+
+  let ghost lemma exec_at_red (zd rs1 rs2: int) (rest: list src)
+      (s: state) (n: int)
+    requires { n >= 1 }
+    requires {
+      exec_isa (n - 1) (compile rest) (step_src s (SRedSum zd rs1 rs2))
+      = exec_src (n - 1) rest (step_src s (SRedSum zd rs1 rs2)) }
+    ensures {
+      exec_isa n (compile (Cons (SRedSum zd rs1 rs2) rest)) s
+      = exec_src n (Cons (SRedSum zd rs1 rs2) rest) s }
+  = ()
+
+  let ghost lemma exec_halt_stops (q: list instr) (s: state) (n: int)
+    requires { n >= 1 }
+    ensures { exec_isa n (Cons Halt q) s = s }
+  = ()
+
+  let ghost lemma exec_at_halt (rest: list src) (s: state) (n: int)
+    requires { n >= 1 }
+    ensures {
+      exec_isa n (compile (Cons SHalt rest)) s
+      = exec_src n (Cons SHalt rest) s }
+  = match rest with
+    | Nil -> exec_halt_stops (Nil: list instr) s n
+    | Cons h more -> exec_halt_stops (compile (Cons h more)) s n
+    end
+
+  let ghost lemma exec_at_zero (p: list src) (s: state)
+    ensures { exec_isa 0 (compile p) s = exec_src 0 p s }
+  = ()
+
+  let ghost lemma exec_at_nil (s: state) (n: int)
+    requires { n >= 0 }
+    ensures { exec_isa n (compile (Nil: list src)) s = exec_src n Nil s }
+  = ()
+
+  let rec ghost lemma compile_exec_eq (p: list src) (s: state) (n: int)
+    requires { n >= 0 }
+    variant { p }
+    ensures { exec_isa n (compile p) s = exec_src n p s }
+  = if n = 0 then exec_at_zero p s else
+    match p with
+    | Nil -> exec_at_nil s n
+    | Cons op rest ->
+        match op with
+        | SAdd rd rs1 rs2 ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_add rd rs1 rs2 rest s n
+        | SAddi rd rs1 imm ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_addi rd rs1 imm rest s n
+        | SMulLo rd rs1 rs2 ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_mullo rd rs1 rs2 rest s n
+        | SLd rd rs1 imm ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_ld rd rs1 imm rest s n
+        | SSd rs2 rs1 imm ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_sd rs2 rs1 imm rest s n
+        | SZMac zd xs1 xs2 ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_zmac zd xs1 xs2 rest s n
+        | SModP zd zs ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_modp zd zs rest s n
+        | SRedSum zd rs1 rs2 ->
+            compile_exec_eq rest (step_src s op) (n - 1);
+            exec_at_red zd rs1 rs2 rest s n
+        | SHalt -> exec_at_halt rest s n
+        end
+    end
+
+end

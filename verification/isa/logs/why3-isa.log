@@ -1,0 +1,24 @@
+File "/workspace/alapeno/verification/isa/isa_check.mlw", line 13, character 4 to line 16, character 46:
+Goal x0_after_add.
+Prover result is: Valid (0.02s, 77292 steps).
+
+File "/workspace/alapeno/verification/isa/isa_check.mlw", line 19, character 4 to line 25, character 61:
+Goal zmac_is_acc_plus_mul.
+Prover result is: Valid (0.02s, 73181 steps).
+
+File "/workspace/alapeno/verification/isa/isa_check.mlw", line 28, character 4 to line 30, character 64:
+Goal modp_neg_one.
+Prover result is: Valid (0.00s, 6837 steps).
+
+File "/workspace/alapeno/verification/isa/isa_check.mlw", line 33, character 4 to line 34, character 41:
+Goal compile_zmac_then_halt.
+Prover result is: Valid (0.00s, 6877 steps).
+
+File "/workspace/alapeno/verification/isa/isa_check.mlw", line 37, character 4 to line 42, character 56:
+Goal red_two_word_sum.
+Prover result is: Valid (0.01s, 6877 steps).
+
+File "/workspace/alapeno/verification/isa/isa_check.mlw", line 45, character 4 to line 52, character 48:
+Goal add_wrap_not_a_trap.
+Prover result is: Valid (0.02s, 68330 steps).
+

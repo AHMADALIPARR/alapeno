@@ -1,0 +1,54 @@
+(* SPDX-License-Identifier: AGPL-3.0-only *)
+
+(* Goals for the integer ISA. The compiler is not redefined here. *)
+
+module IsaCheck
+
+  use int.Int
+  use list.List
+  use map.Map
+  use compile.Compile
+
+  goal x0_after_add:
+    forall s: state, rs1 rs2: int.
+      get_x (step_isa s (Add 0 rs1 rs2)) 0 = 0 /\
+      (step_isa s (Add 0 rs1 rs2)).x = s.x /\
+      get_x (step_isa s (Add 1 rs1 rs2)) 0 = 0
+
+  goal zmac_is_acc_plus_mul:
+    forall s: state.
+      Map.get s.z 0 = 10 ->
+      get_x s 1 = 3 ->
+      get_x s 2 = 5 ->
+      Map.get (step_isa s (ZMac 0 1 2)).z 0 = 25 /\
+      Map.get (step_isa s (ZMac 0 1 2)).z 0 =
+        Map.get s.z 0 + sx_of (get_x s 1) * sx_of (get_x s 2)
+
+  goal modp_neg_one:
+    forall s: state.
+      Map.get s.z 1 = -1 ->
+      Map.get (step_isa s (ModP 0 1)).z 0 = 18446744069414584320
+
+  goal compile_zmac_then_halt:
+    compile (Cons (SZMac 0 1 2) (Cons SHalt Nil))
+      = Cons (ZMac 0 1 2) (Cons Halt Nil)
+
+  goal red_two_word_sum:
+    forall s: state.
+      get_x s 1 = 268435456 ->
+      get_x s 2 = 2 ->
+      Map.get s.mem 268435456 = 5 ->
+      Map.get s.mem 268435464 = -3 ->
+      Map.get (step_isa s (RedSum 0 1 2)).z 0 = 5 + (-3)
+
+  goal add_wrap_not_a_trap:
+    forall s: state.
+      get_x s 2 = 9223372036854775807 ->
+      get_x s 3 = 1 ->
+      get_x (step_isa s (Add 1 2 3)) 1 = 9223372036854775808 /\
+      sx_of (get_x (step_isa s (Add 1 2 3)) 1) = -9223372036854775808 /\
+      (step_isa s (Add 1 2 3)).tcause = s.tcause /\
+      (step_isa s (Add 1 2 3)).tpc = s.tpc /\
+      (step_isa s (Add 1 2 3)).pc = pc_add4 s.pc
+
+end
