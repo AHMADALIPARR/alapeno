@@ -66,7 +66,7 @@ module alapeno_matrix
   logic [255:0] pack_w;
   logic [255:0] beat;
   logic [255:0] zbytes;
-  logic [63:0] d1b, d2b;
+  logic [63:0] d1b, d2b, jnew;
   logic step_bad;
 
   assign is_proj = (op == AOP_PROJECT);
@@ -266,9 +266,10 @@ module alapeno_matrix
         end
         M_RJ: state <= M_CJ;
         M_CJ: begin
-          hold_j = b_rdata[63:0];
+          jnew = b_rdata[63:0];
+          hold_j <= jnew;
           d0 = s64_sub(hold_e, hold_p);
-          d1 = s64_add(hold_j, d0.val);
+          d1 = s64_add(jnew, d0.val);
           d2 = s64_add(hold_p, d1.val);
           if (!d0.ok || !d1.ok || !d2.ok) state <= M_BAD;
           else begin
