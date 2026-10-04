@@ -108,7 +108,12 @@ package alapeno_pkg;
   } zadd_t;
 
   function automatic logic [63:0] sext16(input logic [15:0] imm);
-    sext16 = {{48{imm[15]}}, imm};
+    logic sign;
+    begin
+      // imm[15] via a logical shift, not a constant select.
+      sign = imm >> 15;
+      sext16 = {{48{sign}}, imm};
+    end
   endfunction
 
   function automatic logic [63:0] zext16(input logic [15:0] imm);
@@ -121,34 +126,48 @@ package alapeno_pkg;
 
   function automatic logic fetch_ok(input logic [31:0] pc);
     logic [32:0] b1, b2, b3;
+    logic b1_hi, b2_hi, b3_hi;
+    logic [31:0] b1_lo, b2_lo, b3_lo;
     begin
       b1 = {1'b0, pc} + 33'd1;
       b2 = {1'b0, pc} + 33'd2;
       b3 = {1'b0, pc} + 33'd3;
-      fetch_ok = exec_byte(pc) && (b1[32] == 1'b0) && exec_byte(b1[31:0]) &&
-                 (b2[32] == 1'b0) && exec_byte(b2[31:0]) &&
-                 (b3[32] == 1'b0) && exec_byte(b3[31:0]);
+      // bN[32] is the carry bit; bN[31:0] is the low word.
+      b1_hi = b1 >> 32; b1_lo = b1;
+      b2_hi = b2 >> 32; b2_lo = b2;
+      b3_hi = b3 >> 32; b3_lo = b3;
+      fetch_ok = exec_byte(pc) && (b1_hi == 1'b0) && exec_byte(b1_lo) &&
+                 (b2_hi == 1'b0) && exec_byte(b2_lo) &&
+                 (b3_hi == 1'b0) && exec_byte(b3_lo);
     end
   endfunction
 
   function automatic logic bytes_in_rom(input logic [31:0] a, input logic [6:0] n);
     logic [32:0] last;
+    logic last_hi;
+    logic [31:0] last_lo;
     begin
       if (n == 7'd0) bytes_in_rom = 1'b0;
       else begin
         last = {1'b0, a} + {26'b0, n} - 33'd1;
-        bytes_in_rom = (last[32] == 1'b0) && (a <= ROM_HI) && (last[31:0] <= ROM_HI);
+        last_hi = last >> 32;
+        last_lo = last;
+        bytes_in_rom = (last_hi == 1'b0) && (a <= ROM_HI) && (last_lo <= ROM_HI);
       end
     end
   endfunction
 
   function automatic logic bytes_in_sram(input logic [31:0] a, input logic [6:0] n);
     logic [32:0] last;
+    logic last_hi;
+    logic [31:0] last_lo;
     begin
       if (n == 7'd0) bytes_in_sram = 1'b0;
       else begin
         last = {1'b0, a} + {26'b0, n} - 33'd1;
-        bytes_in_sram = (last[32] == 1'b0) && (a >= SRAM_LO) && (last[31:0] <= SRAM_HI);
+        last_hi = last >> 32;
+        last_lo = last;
+        bytes_in_sram = (last_hi == 1'b0) && (a >= SRAM_LO) && (last_lo <= SRAM_HI);
       end
     end
   endfunction
@@ -179,22 +198,33 @@ package alapeno_pkg;
   endfunction
 
   function automatic logic aligned(input logic [31:0] a, input logic [6:0] n);
+    logic a0;
+    logic [1:0] a10;
+    logic [2:0] a20;
+    logic [4:0] a40;
     begin
+      // Truncation keeps the low bits: a[0], a[1:0], a[2:0], a[4:0].
+      a0 = a;
+      a10 = a;
+      a20 = a;
+      a40 = a;
       if (n == 7'd1) aligned = 1'b1;
-      else if (n == 7'd2) aligned = (a[0] == 1'b0);
-      else if (n == 7'd4) aligned = (a[1:0] == 2'b00);
-      else if (n == 7'd8) aligned = (a[2:0] == 3'b000);
-      else if (n == 7'd32) aligned = (a[4:0] == 5'b00000);
+      else if (n == 7'd2) aligned = (a0 == 1'b0);
+      else if (n == 7'd4) aligned = (a10 == 2'b00);
+      else if (n == 7'd8) aligned = (a20 == 3'b000);
+      else if (n == 7'd32) aligned = (a40 == 5'b00000);
       else aligned = 1'b0;
     end
   endfunction
 
   function automatic logic [63:0] field_add(input logic [63:0] a, input logic [63:0] b);
     logic [64:0] s;
+    logic [63:0] slo;
     begin
       s = {1'b0, a} + {1'b0, b};
-      if (s >= {1'b0, P}) field_add = s[63:0] - P;
-      else field_add = s[63:0];
+      slo = s;
+      if (s >= {1'b0, P}) field_add = slo - P;
+      else field_add = slo;
     end
   endfunction
 
@@ -242,34 +272,69 @@ package alapeno_pkg;
 
   function automatic zadd_t z_add(input logic signed [255:0] a, input logic signed [255:0] b);
     logic signed [256:0] w;
+    logic a_sign, b_sign, w_ext, w_sign, ok;
+    logic signed [255:0] sum;
     begin
-      w = {a[255], a} + {b[255], b};
-      z_add.sum = w[255:0];
-      z_add.ok = (w[256] == w[255]);
+      a_sign = a >> 255;
+      b_sign = b >> 255;
+      w = {a_sign, a} + {b_sign, b};
+      sum = w;
+      w_ext = w >> 256;
+      w_sign = w >> 255;
+      ok = (w_ext == w_sign);
+      z_add = {ok, sum};
     end
   endfunction
 
   function automatic zadd_t z_sub(input logic signed [255:0] a, input logic signed [255:0] b);
     logic signed [256:0] w;
+    logic a_sign, b_sign, w_ext, w_sign, ok;
+    logic signed [255:0] sum;
     begin
-      w = {a[255], a} - {b[255], b};
-      z_sub.sum = w[255:0];
-      z_sub.ok = (w[256] == w[255]);
+      a_sign = a >> 255;
+      b_sign = b >> 255;
+      w = {a_sign, a} - {b_sign, b};
+      sum = w;
+      w_ext = w >> 256;
+      w_sign = w >> 255;
+      ok = (w_ext == w_sign);
+      z_sub = {ok, sum};
+    end
+  endfunction
+
+  function automatic logic zadd_ok(input zadd_t z);
+    logic [256:0] bits;
+    begin
+      bits = z;
+      zadd_ok = bits >> 256;
+    end
+  endfunction
+
+  function automatic logic signed [255:0] zadd_sum(input zadd_t z);
+    begin
+      zadd_sum = z;
     end
   endfunction
 
   function automatic logic z_fit64(input logic signed [255:0] z);
+    logic z63;
+    logic [191:0] zhi;
     begin
-      if (z[63]) z_fit64 = (z[255:64] == {192{1'b1}});
-      else z_fit64 = (z[255:64] == {192{1'b0}});
+      z63 = z >> 63;
+      zhi = z >> 64;
+      if (z63) z_fit64 = (zhi == {192{1'b1}});
+      else z_fit64 = (zhi == {192{1'b0}});
     end
   endfunction
 
   function automatic logic signed [127:0] mul_s64(input logic [63:0] a, input logic [63:0] b);
+    logic a_sign, b_sign;
     logic signed [127:0] as, bs;
     begin
-      as = {{64{a[63]}}, a};
-      bs = {{64{b[63]}}, b};
+      a_sign = a >> 63;
+      b_sign = b >> 63;
+      as = {{64{a_sign}}, a};
+      bs = {{64{b_sign}}, b};
       mul_s64 = as * bs;
     end
   endfunction
@@ -280,10 +345,12 @@ package alapeno_pkg;
 
   function automatic zadd_t z_mac(input logic signed [255:0] acc, input logic [63:0] a, input logic [63:0] b);
     logic signed [127:0] prod;
+    logic prod_sign;
     logic signed [255:0] wide;
     begin
       prod = mul_s64(a, b);
-      wide = {{128{prod[127]}}, prod};
+      prod_sign = prod >> 127;
+      wide = {{128{prod_sign}}, prod};
       z_mac = z_add(acc, wide);
     end
   endfunction
@@ -303,22 +370,22 @@ package alapeno_pkg;
     logic [191:0] pk;
     integer sh;
     begin
-      limb0 = z[63:0];
-      limb1 = z[127:64];
-      limb2 = z[191:128];
-      limb3 = z[255:192];
+      limb0 = z;
+      limb1 = z >> 64;
+      limb2 = z >> 128;
+      limb3 = z >> 192;
       acc = {{128{1'b0}}, limb0};
       acc = acc + {{128{1'b0}}, limb1} * 192'd4294967295;
       acc = acc - {{128{1'b0}}, limb2} * 192'd4294967296;
       acc = acc + {{128{1'b0}}, limb3};
-      if (z[255]) acc = acc - 192'd4294967295;
+      if ((z >> 255) != 0) acc = acc - 192'd4294967295;
       if (acc < 0) acc = acc + $signed(192'd4294967297 * {{128{1'b0}}, P});
-      rem = acc[191:0];
+      rem = acc;
       for (sh = 40; sh >= 0; sh = sh - 1) begin
         pk = {{128{1'b0}}, P} << sh;
         if (rem >= pk) rem = rem - pk;
       end
-      euclid_mod_p = rem[63:0];
+      euclid_mod_p = rem;
     end
   endfunction
 
@@ -352,8 +419,8 @@ package alapeno_pkg;
           if (r < rows) begin
             rowb = {32'b0, base} + (r * {32'b0, stride});
             rowl = {32'b0, cols} * {32'b0, ew};
-            if ((rowb[63:32] != 32'h0) || ((rowb + rowl) > 64'h0000_0001_0000_0000)) hit = 1'b1;
-            else if (ranges_overlap(dma_base, dma_len, rowb[31:0], rowl[31:0])) hit = 1'b1;
+            if (((rowb >> 32) != 32'h0) || ((rowb + rowl) > 64'h0000_0001_0000_0000)) hit = 1'b1;
+            else if (ranges_overlap(dma_base, dma_len, rowb, rowl)) hit = 1'b1;
           end
         end
       end
@@ -381,10 +448,10 @@ package alapeno_pkg;
               if (rb < b_rows) begin
                 bb = {32'b0, b_base} + (rb * {32'b0, b_stride});
                 bl = {32'b0, b_cols} * {32'b0, b_ew};
-                if ((ab[63:32] == 0) && (bb[63:32] == 0) &&
+                if (((ab >> 32) == 0) && ((bb >> 32) == 0) &&
                     ((ab + al) <= 64'h0000_0001_0000_0000) &&
                     ((bb + bl) <= 64'h0000_0001_0000_0000)) begin
-                  if (ranges_overlap(ab[31:0], al[31:0], bb[31:0], bl[31:0])) hit = 1'b1;
+                  if (ranges_overlap(ab, al, bb, bl)) hit = 1'b1;
                 end else hit = 1'b1;
               end
             end
@@ -410,10 +477,10 @@ package alapeno_pkg;
             if (c < cols) begin
               ea = {32'b0, base} + (r * {32'b0, stride}) + (c * {32'b0, ew});
               last = ea + {32'b0, ew} - 64'd1;
-              if ((ea[63:32] != 0) || (last[63:32] != 0) ||
-                  (ea[31:0] < SRAM_LO) || (last[31:0] > SRAM_HI)) ok = 1'b0;
-              if ((ew == 32'd32) && (ea[4:0] != 5'b0)) ok = 1'b0;
-              if ((ew == 32'd8) && (ea[2:0] != 3'b0)) ok = 1'b0;
+              if (((ea >> 32) != 0) || ((last >> 32) != 0) ||
+                  (ea < {32'h0, SRAM_LO}) || (last > {32'h0, SRAM_HI})) ok = 1'b0;
+              if ((ew == 32'd32) && ((ea & 64'h1F) != 64'h0)) ok = 1'b0;
+              if ((ew == 32'd8) && ((ea & 64'h7) != 64'h0)) ok = 1'b0;
             end
           end
         end
@@ -426,16 +493,16 @@ package alapeno_pkg;
     logic [63:0] need;
     begin
       need = {32'b0, cols} * {32'b0, ew};
-      if (ew == 32'd32) stride_ok = (stride[4:0] == 5'b0) && ({32'b0, stride} >= need);
-      else if (ew == 32'd8) stride_ok = (stride[2:0] == 3'b0) && ({32'b0, stride} >= need);
+      if (ew == 32'd32) stride_ok = ((stride & 32'h1F) == 32'h0) && ({32'b0, stride} >= need);
+      else if (ew == 32'd8) stride_ok = ((stride & 32'h7) == 32'h0) && ({32'b0, stride} >= need);
       else stride_ok = 1'b0;
     end
   endfunction
 
   function automatic logic ptr_align(input logic [31:0] ptr, input logic [31:0] ew);
     begin
-      if (ew == 32'd32) ptr_align = (ptr[4:0] == 5'b0);
-      else ptr_align = (ptr[2:0] == 3'b0);
+      if (ew == 32'd32) ptr_align = ((ptr & 32'h1F) == 32'h0);
+      else ptr_align = ((ptr & 32'h7) == 32'h0);
     end
   endfunction
 

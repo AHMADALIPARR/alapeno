@@ -40,8 +40,14 @@ module alapeno_dma
   logic [32:0] src_end, dst_end;
   logic bad_len, bad_align, bad_range, bad_ov;
   logic accept;
+  logic [2:0] len_lo, src_lo, dst_lo;
+  logic src_end_hi, dst_end_hi;
 
   assign busy = (state != D_IDLE);
+  // Low 3 bits outside the always_comb. Same bits as len[2:0], src[2:0], dst[2:0].
+  assign len_lo = len[2:0];
+  assign src_lo = src[2:0];
+  assign dst_lo = dst[2:0];
   assign abort_now = mmio_wr && (mmio_addr == 12'h00C) && mmio_wdata[1] && busy;
   assign start_now = mmio_wr && (mmio_addr == 12'h00C) && mmio_wdata[0] && !(mmio_wdata[1] && busy);
   assign stop_now = abort_now || (start_now && busy);
@@ -49,9 +55,11 @@ module alapeno_dma
   always_comb begin
     src_end = {1'b0, src} + {1'b0, len};
     dst_end = {1'b0, dst} + {1'b0, len};
-    bad_len = (len[2:0] != 3'b000) || (len == 32'h0) || (len > 32'd524288);
-    bad_align = (src[2:0] != 3'b000) || (dst[2:0] != 3'b000);
-    bad_range = src_end[32] || dst_end[32] ||
+    bad_len = (len_lo != 3'b000) || (len == 32'h0) || (len > 32'd524288);
+    bad_align = (src_lo != 3'b000) || (dst_lo != 3'b000);
+    src_end_hi = src_end >> 32;
+    dst_end_hi = dst_end >> 32;
+    bad_range = src_end_hi || dst_end_hi ||
                 (src < SRAM_LO) || (src_end > 33'h0_1008_0000) ||
                 (dst < SRAM_LO) || (dst_end > 33'h0_1008_0000);
     bad_ov = geom_hits(src, len, g0_v, g0_base, g0_stride, g0_rows, g0_cols, g0_ew) ||

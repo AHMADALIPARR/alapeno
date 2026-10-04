@@ -54,6 +54,9 @@ module alapeno_vector
   assign red_mm = (op == AOP_MIN) || (op == AOP_MAX);
   assign vec_op = (op == AOP_VADD) || (op == AOP_VSUB);
   assign ew = (red_sum && !field_mode) ? 32'd32 : 32'd8;
+  // ew[6:0] outside the always_comb so Icarus does not widen the read.
+  logic [6:0] ew_sz;
+  assign ew_sz = ew[6:0];
 
   always_comb begin
     b_valid = 1'b0;
@@ -80,7 +83,7 @@ module alapeno_vector
       b_valid = 1'b1;
       b_we = 1'b1;
       b_shadow = 1'b1;
-      b_size = ew[6:0];
+      b_size = ew_sz;
       if (vec_op) begin
         b_addr = ptr_c + (sh * 32'd8);
         for (bi = 0; bi < 8; bi = bi + 1)

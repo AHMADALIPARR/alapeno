@@ -75,6 +75,9 @@ module alapeno_matrix
   assign is_proj = (op == AOP_PROJECT);
   assign is_route = (op == AOP_ROUTE);
   assign ew = is_proj ? 32'd8 : (field_mode ? 32'd8 : 32'd32);
+  // ew_sz outside the always_comb so Icarus does not widen the read.
+  logic [6:0] ew_sz;
+  assign ew_sz = ew[6:0];
 
   always_comb begin
     b_valid = 1'b0;
@@ -83,7 +86,7 @@ module alapeno_matrix
     b_publish = 1'b0;
     b_discard = 1'b0;
     b_addr = 32'h0;
-    b_size = ew[6:0];
+    b_size = ew_sz;
     b_wdata = '0;
     complete = 1'b0;
     fail = 1'b0;
@@ -113,7 +116,7 @@ module alapeno_matrix
       b_valid = 1'b1;
       b_we = 1'b1;
       b_shadow = 1'b1;
-      b_size = ew[6:0];
+      b_size = ew_sz;
       if (is_proj && (pass == 32'd1))
         b_addr = ptr_b + (m * ldb) + (n * 32'd8);
       else if (is_proj)

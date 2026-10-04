@@ -58,14 +58,60 @@ module alapeno_core
   endfunction
 
   function automatic logic [63:0] fmt_load(input logic [5:0] op, input logic [255:0] raw);
+    logic b31, b15, b7;
+    logic [63:0] d;
+    logic [31:0] w;
+    logic [15:0] h;
+    logic [7:0] b;
     begin
-      if (op == OP_LD) fmt_load = raw[63:0];
-      else if (op == OP_LW) fmt_load = {{32{raw[31]}}, raw[31:0]};
-      else if (op == OP_LH) fmt_load = {{48{raw[15]}}, raw[15:0]};
-      else if (op == OP_LB) fmt_load = {{56{raw[7]}}, raw[7:0]};
-      else if (op == OP_LWU) fmt_load = {32'h0, raw[31:0]};
-      else if (op == OP_LHU) fmt_load = {48'h0, raw[15:0]};
-      else fmt_load = {56'h0, raw[7:0]};
+      d = raw;
+      w = raw;
+      h = raw;
+      b = raw;
+      b31 = raw >> 31;
+      b15 = raw >> 15;
+      b7 = raw >> 7;
+      if (op == OP_LD) fmt_load = d;
+      else if (op == OP_LW) fmt_load = {{32{b31}}, w};
+      else if (op == OP_LH) fmt_load = {{48{b15}}, h};
+      else if (op == OP_LB) fmt_load = {{56{b7}}, b};
+      else if (op == OP_LWU) fmt_load = {32'h0, w};
+      else if (op == OP_LHU) fmt_load = {48'h0, h};
+      else fmt_load = {56'h0, b};
+    end
+  endfunction
+
+  function automatic logic [1:0] t34_hi(input logic signed [33:0] v);
+    t34_hi = v >> 32;
+  endfunction
+
+  function automatic logic [31:0] t34_lo(input logic signed [33:0] v);
+    t34_lo = v;
+  endfunction
+
+  // {v[31:2], 2'b00}: low 32 bits with the low two bits cleared.
+  function automatic logic [31:0] t34_al4(input logic signed [33:0] v);
+    logic [31:0] lo;
+    logic [29:0] mid;
+    begin
+      lo = v;
+      mid = lo >> 2;
+      t34_al4 = {mid, 2'b00};
+    end
+  endfunction
+
+  // Little-endian 64-bit limb of a 256-bit word. which is 0..3.
+  function automatic logic [63:0] zlimb(input logic signed [255:0] z, input logic [4:0] which);
+    logic [63:0] w0, w1, w2, w3;
+    begin
+      w0 = z;
+      w1 = z >> 64;
+      w2 = z >> 128;
+      w3 = z >> 192;
+      if (which == 5'd0) zlimb = w0;
+      else if (which == 5'd1) zlimb = w1;
+      else if (which == 5'd2) zlimb = w2;
+      else zlimb = w3;
     end
   endfunction
 
@@ -111,6 +157,12 @@ module alapeno_core
   logic [63:0] r25, r20, r15, modv;
   logic signed [127:0] sp128;
   logic [127:0] up128;
+  logic [1:0] pc_lo, imm_lo;
+  logic imm_b15, elem_b63, chosen_b63, r20_b63;
+  logic dma_b31, acc_b31;
+  logic [5:0] ysh;
+  logic [31:0] r20_hi, r20_lo, sum_hi, end_lo;
+  logic [2:0] r20_lo3;
 
   always_comb begin
     trap = 1'b0;
@@ -152,15 +204,18 @@ module alapeno_core
     red_acc_n = red_acc;
     red_res_n = red_res;
     red_cur_n = red_cur;
-    instr = a_rdata[31:0];
-    op = instr[31:26];
-    i25 = instr[25:21];
-    i20 = instr[20:16];
-    i15 = instr[15:11];
-    funct = instr[10:0];
-    imm = instr[15:0];
-    f3 = instr[10:8];
-    zlo = instr[7:0];
+    instr = a_rdata;
+    op = instr >> 26;
+    i25 = instr >> 21;
+    i20 = instr >> 16;
+    i15 = instr >> 11;
+    funct = instr;
+    imm = instr;
+    f3 = instr >> 8;
+    zlo = instr;
+    pc_lo = pc;
+    imm_b15 = imm >> 15;
+    imm_lo = imm;
     sum = 64'h0;
     phys = 32'h0;
     sz = 7'd0;
@@ -178,6 +233,10 @@ module alapeno_core
     r25 = xrd(i25);
     r20 = xrd(i20);
     r15 = xrd(i15);
+    r20_b63 = r20 >> 63;
+    r20_hi = r20 >> 32;
+    r20_lo = r20;
+    r20_lo3 = r20;
     sp128 = mul_s64(r20, r15);
     up128 = mul_u64(r20, r15);
     modv = 64'h0;
@@ -185,7 +244,7 @@ module alapeno_core
     if (!rst) begin
       case (state)
         ST_FETCH: begin
-          if (pc[1:0] != 2'b00) begin
+          if (pc_lo != 2'b00) begin
             trap = 1'b1;
             tcause_c = CAUSE_CTRL;
           end else if (!fetch_ok(pc)) begin
@@ -207,9 +266,11 @@ module alapeno_core
           end else if (ld_mmio) begin
             x_we = 1'b1;
             x_wa = ld_rd;
-            if (ld_op == OP_LW)
-              x_wd = ld_dma ? {{32{dma_rdata[31]}}, dma_rdata} : {{32{acc_rdata[31]}}, acc_rdata};
-            else
+            if (ld_op == OP_LW) begin
+              dma_b31 = dma_rdata >> 31;
+              acc_b31 = acc_rdata >> 31;
+              x_wd = ld_dma ? {{32{dma_b31}}, dma_rdata} : {{32{acc_b31}}, acc_rdata};
+            end else
               x_wd = ld_dma ? {32'h0, dma_rdata} : {32'h0, acc_rdata};
           end else begin
             x_we = 1'b1;
@@ -223,26 +284,27 @@ module alapeno_core
         ST_RRD: begin
           a_valid = 1'b1;
           a_we = 1'b0;
-          a_addr = red_base + {red_idx[28:0], 3'b000};
+          a_addr = red_base + (red_idx << 3);
           a_size = 7'd8;
           next_state = ST_RWB;
         end
         ST_RWB: begin
-          elem = a_rdata[63:0];
+          elem = a_rdata;
+          elem_b63 = elem >> 63;
           if ((red_funct == RED_MODP) && (elem >= P)) begin
             trap = 1'b1;
             tcause_c = CAUSE_RED;
           end else if (red_funct == RED_SUM) begin
-            za = z_add(red_acc, {{192{elem[63]}}, elem});
-            if (!za.ok) begin
+            za = z_add(red_acc, {{192{elem_b63}}, elem});
+            if (!zadd_ok(za)) begin
               trap = 1'b1;
               tcause_c = CAUSE_ZRANGE;
             end else begin
-              red_acc_n = za.sum;
+              red_acc_n = zadd_sum(za);
               if ({32'h0, red_idx} + 64'd1 == red_len) begin
                 z_we = 1'b1;
                 z_wa = red_zd;
-                z_wd = za.sum;
+                z_wd = zadd_sum(za);
                 pc_we = 1'b1;
                 pc_next = pc + 32'd4;
                 next_state = ST_FETCH;
@@ -273,7 +335,8 @@ module alapeno_core
             if ({32'h0, red_idx} + 64'd1 == red_len) begin
               z_we = 1'b1;
               z_wa = red_zd;
-              z_wd = {{192{chosen[63]}}, chosen};
+              chosen_b63 = chosen >> 63;
+              z_wd = {{192{chosen_b63}}, chosen};
               pc_we = 1'b1;
               pc_next = pc + 32'd4;
               next_state = ST_FETCH;
@@ -294,6 +357,7 @@ module alapeno_core
             end else begin
               xv = xrd(i20);
               yv = xrd(i15);
+              ysh = yv;
               x_wa = i25;
               x_we = 1'b1;
               pc_we = 1'b1;
@@ -304,14 +368,14 @@ module alapeno_core
               else if (op == OP_AND) x_wd = xv & yv;
               else if (op == OP_OR) x_wd = xv | yv;
               else if (op == OP_XOR) x_wd = xv ^ yv;
-              else if (op == OP_SLL) x_wd = xv << yv[5:0];
-              else if (op == OP_SRL) x_wd = xv >> yv[5:0];
-              else if (op == OP_SRA) x_wd = $unsigned($signed(xv) >>> yv[5:0]);
+              else if (op == OP_SLL) x_wd = xv << ysh;
+              else if (op == OP_SRL) x_wd = xv >> ysh;
+              else if (op == OP_SRA) x_wd = $unsigned($signed(xv) >>> ysh);
               else if (op == OP_SLT) x_wd = ($signed(xv) < $signed(yv)) ? 64'd1 : 64'd0;
               else if (op == OP_SLTU) x_wd = (xv < yv) ? 64'd1 : 64'd0;
-              else if (op == OP_MULLO) x_wd = sp128[63:0];
-              else if (op == OP_MULHI) x_wd = sp128[127:64];
-              else x_wd = up128[127:64];
+              else if (op == OP_MULLO) x_wd = sp128;
+              else if (op == OP_MULHI) x_wd = sp128 >> 64;
+              else x_wd = up128 >> 64;
             end
           end else if ((op == OP_ADDI) || (op == OP_ANDI) || (op == OP_ORI) ||
                        (op == OP_XORI) || (op == OP_SLTI) || (op == OP_SLTIU) ||
@@ -328,7 +392,7 @@ module alapeno_core
             else if (op == OP_XORI) x_wd = xv ^ zext16(imm);
             else if (op == OP_SLTI) x_wd = ($signed(xv) < $signed(sext16(imm))) ? 64'd1 : 64'd0;
             else if (op == OP_SLTIU) x_wd = (xv < sext16(imm)) ? 64'd1 : 64'd0;
-            else x_wd = {{32{imm[15]}}, imm, 16'h0000};
+            else x_wd = {{32{imm_b15}}, imm, 16'h0000};
           end else if (op == OP_Z) begin
             if (zlo != 8'h00) begin
               trap = 1'b1;
@@ -345,7 +409,7 @@ module alapeno_core
                 trap = 1'b1; tcause_c = CAUSE_ILL;
               end else begin
                 z_we = 1'b1; z_wa = i25;
-                z_wd = {{192{r20[63]}}, r20};
+                z_wd = {{192{r20_b63}}, r20};
                 pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
               end
             end else if (f3 == Z_LIMB) begin
@@ -353,10 +417,7 @@ module alapeno_core
                 trap = 1'b1; tcause_c = CAUSE_ILL;
               end else begin
                 x_we = 1'b1; x_wa = i20;
-                if (i15[1:0] == 2'd0) x_wd = zr[i25][63:0];
-                else if (i15[1:0] == 2'd1) x_wd = zr[i25][127:64];
-                else if (i15[1:0] == 2'd2) x_wd = zr[i25][191:128];
-                else x_wd = zr[i25][255:192];
+                x_wd = zlimb(zr[i25], i15);
                 pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
               end
             end else if (f3 == Z_FIT) begin
@@ -365,7 +426,7 @@ module alapeno_core
               end else if (!z_fit64(zr[i25])) begin
                 trap = 1'b1; tcause_c = CAUSE_ZRANGE;
               end else begin
-                x_we = 1'b1; x_wa = i20; x_wd = zr[i25][63:0];
+                x_we = 1'b1; x_wa = i20; x_wd = zr[i25];
                 pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
               end
             end else if ((f3 == Z_ADD) || (f3 == Z_SUB)) begin
@@ -374,10 +435,10 @@ module alapeno_core
               end else begin
                 if (f3 == Z_ADD) za = z_add(zr[i20], zr[i15]);
                 else za = z_sub(zr[i20], zr[i15]);
-                if (!za.ok) begin
+                if (!zadd_ok(za)) begin
                   trap = 1'b1; tcause_c = CAUSE_ZRANGE;
                 end else begin
-                  z_we = 1'b1; z_wa = i25; z_wd = za.sum;
+                  z_we = 1'b1; z_wa = i25; z_wd = zadd_sum(za);
                   pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
                 end
               end
@@ -386,10 +447,10 @@ module alapeno_core
                 trap = 1'b1; tcause_c = CAUSE_ILL;
               end else begin
                 za = z_mac(zr[i25], r20, r15);
-                if (!za.ok) begin
+                if (!zadd_ok(za)) begin
                   trap = 1'b1; tcause_c = CAUSE_ZRANGE;
                 end else begin
-                  z_we = 1'b1; z_wa = i25; z_wd = za.sum;
+                  z_we = 1'b1; z_wa = i25; z_wd = zadd_sum(za);
                   pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
                 end
               end
@@ -408,9 +469,9 @@ module alapeno_core
             end else if (!((funct == RED_SUM) || (funct == RED_MIN) ||
                            (funct == RED_MAX) || (funct == RED_MODP))) begin
               trap = 1'b1; tcause_c = CAUSE_ILL;
-            end else if (r20[63:32] != 32'h0) begin
+            end else if (r20_hi != 32'h0) begin
               trap = 1'b1; tcause_c = CAUSE_PERM;
-            end else if (r20[2:0] != 3'b000) begin
+            end else if (r20_lo3 != 3'b000) begin
               trap = 1'b1; tcause_c = CAUSE_ALIGN;
             end else if (r15 == 64'h0) begin
               if ((funct == RED_MIN) || (funct == RED_MAX)) begin
@@ -421,10 +482,11 @@ module alapeno_core
               end
             end else begin
               nbytes = {r15, 3'b000};
-              end_m = {35'b0, r20[31:0]} + nbytes;
+              end_m = {35'b0, r20_lo} + nbytes;
+              end_lo = end_m;
               if (end_m > 67'h1_0000_0000) span_ok = 1'b0;
-              else if ((r20[31:0] <= ROM_HI) && ((end_m[31:0] - 32'd1) <= ROM_HI)) span_ok = 1'b1;
-              else if ((r20[31:0] >= SRAM_LO) && ((end_m[31:0] - 32'd1) <= SRAM_HI)) span_ok = 1'b1;
+              else if ((r20_lo <= ROM_HI) && ((end_lo - 32'd1) <= ROM_HI)) span_ok = 1'b1;
+              else if ((r20_lo >= SRAM_LO) && ((end_lo - 32'd1) <= SRAM_HI)) span_ok = 1'b1;
               else span_ok = 1'b0;
               if (!span_ok) begin
                 trap = 1'b1; tcause_c = CAUSE_PERM;
@@ -432,7 +494,7 @@ module alapeno_core
                 trap = 1'b1; tcause_c = CAUSE_RED;
               end else begin
                 arm_red = 1'b1;
-                arm_base = r20[31:0];
+                arm_base = r20_lo;
                 arm_len = r15;
                 arm_zd = i25;
                 arm_funct = funct;
@@ -441,7 +503,7 @@ module alapeno_core
             end
           end else if ((op == OP_BEQ) || (op == OP_BNE) || (op == OP_BLT) ||
                        (op == OP_BGE) || (op == OP_BLTU) || (op == OP_BGEU)) begin
-            if (imm[1:0] != 2'b00) begin
+            if (imm_lo != 2'b00) begin
               trap = 1'b1; tcause_c = CAUSE_CTRL;
             end else begin
               xv = r25;
@@ -455,39 +517,39 @@ module alapeno_core
               if (!taken) begin
                 pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
               end else begin
-                t34 = $signed({2'b00, pc}) + $signed({{18{imm[15]}}, imm});
-                if (t34[33:32] != 2'b00) begin
+                t34 = $signed({2'b00, pc}) + $signed({{18{imm_b15}}, imm});
+                if (t34_hi(t34) != 2'b00) begin
                   trap = 1'b1; tcause_c = CAUSE_PERM;
-                end else if (!fetch_ok(t34[31:0])) begin
+                end else if (!fetch_ok(t34_lo(t34))) begin
                   trap = 1'b1; tcause_c = CAUSE_PERM;
                 end else begin
-                  pc_we = 1'b1; pc_next = t34[31:0]; next_state = ST_FETCH;
+                  pc_we = 1'b1; pc_next = t34_lo(t34); next_state = ST_FETCH;
                 end
               end
             end
           end else if (op == OP_JAL) begin
             if (i20 != 5'd0) begin
               trap = 1'b1; tcause_c = CAUSE_ILL;
-            end else if (imm[1:0] != 2'b00) begin
+            end else if (imm_lo != 2'b00) begin
               trap = 1'b1; tcause_c = CAUSE_CTRL;
             end else begin
-              t34 = $signed({2'b00, pc}) + $signed({{18{imm[15]}}, imm});
-              if (t34[33:32] != 2'b00) begin
+              t34 = $signed({2'b00, pc}) + $signed({{18{imm_b15}}, imm});
+              if (t34_hi(t34) != 2'b00) begin
                 trap = 1'b1; tcause_c = CAUSE_PERM;
-              end else if (!fetch_ok(t34[31:0])) begin
+              end else if (!fetch_ok(t34_lo(t34))) begin
                 trap = 1'b1; tcause_c = CAUSE_PERM;
               end else begin
                 x_we = 1'b1; x_wa = i25; x_wd = link;
-                pc_we = 1'b1; pc_next = t34[31:0]; next_state = ST_FETCH;
+                pc_we = 1'b1; pc_next = t34_lo(t34); next_state = ST_FETCH;
               end
             end
           end else if (op == OP_JALR) begin
-            if (r20[63:32] != 32'h0) begin
+            if (r20_hi != 32'h0) begin
               trap = 1'b1; tcause_c = CAUSE_PERM;
             end else begin
-              t34 = $signed({2'b00, r20[31:0]}) + $signed({{18{imm[15]}}, imm});
-              tgt = {t34[31:2], 2'b00};
-              if (t34[33:32] != 2'b00) begin
+              t34 = $signed({2'b00, r20_lo}) + $signed({{18{imm_b15}}, imm});
+              tgt = t34_al4(t34);
+              if (t34_hi(t34) != 2'b00) begin
                 trap = 1'b1; tcause_c = CAUSE_PERM;
               end else if (!fetch_ok(tgt)) begin
                 trap = 1'b1; tcause_c = CAUSE_PERM;
@@ -519,30 +581,31 @@ module alapeno_core
               else if ((op == OP_LH) || (op == OP_LHU) || (op == OP_SH)) sz = 7'd2;
               else if ((op == OP_LB) || (op == OP_LBU) || (op == OP_SB)) sz = 7'd1;
               else sz = 7'd32;
-              phys = sum[31:0];
-              if (sum[63:32] != 32'h0) begin
+              phys = sum;
+              sum_hi = sum >> 32;
+              if (sum_hi != 32'h0) begin
                 trap = 1'b1; tcause_c = CAUSE_PERM;
               end else if (!aligned(phys, sz)) begin
                 trap = 1'b1; tcause_c = CAUSE_ALIGN;
               end else if (in_accel_win(phys) || in_dma_win(phys)) begin
                 if (!((sz == 7'd4) && ((op == OP_LW) || (op == OP_LWU) || (op == OP_SW)))) begin
                   trap = 1'b1; tcause_c = CAUSE_PERM;
-                end else if (in_accel_win(phys) && !accel_off_ok(phys[11:0])) begin
+                end else if (in_accel_win(phys) && !accel_off_ok(phys)) begin
                   trap = 1'b1; tcause_c = CAUSE_PERM;
-                end else if (in_dma_win(phys) && !dma_off_ok(phys[11:0])) begin
+                end else if (in_dma_win(phys) && !dma_off_ok(phys)) begin
                   trap = 1'b1; tcause_c = CAUSE_PERM;
                 end else if (op == OP_SW) begin
                   if (in_accel_win(phys)) begin
-                    acc_wr = 1'b1; acc_addr = phys[11:0]; acc_wdata = r25[31:0];
+                    acc_wr = 1'b1; acc_addr = phys; acc_wdata = r25;
                   end else begin
-                    dma_wr = 1'b1; dma_addr = phys[11:0]; dma_wdata = r25[31:0];
+                    dma_wr = 1'b1; dma_addr = phys; dma_wdata = r25;
                   end
                   pc_we = 1'b1; pc_next = pc + 32'd4; next_state = ST_FETCH;
                 end else begin
                   if (in_accel_win(phys)) begin
-                    acc_rd = 1'b1; acc_addr = phys[11:0];
+                    acc_rd = 1'b1; acc_addr = phys;
                   end else begin
-                    dma_rd = 1'b1; dma_addr = phys[11:0];
+                    dma_rd = 1'b1; dma_addr = phys;
                   end
                   save_ld = 1'b1; save_op = op; save_rd = i25;
                   save_mmio = 1'b1; save_dma = in_dma_win(phys); save_z = 1'b0;
