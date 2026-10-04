@@ -47,6 +47,7 @@ module alapeno_matrix
   localparam logic [3:0] M_SH   = 4'd12;
   localparam logic [3:0] M_PUB  = 4'd13;
   localparam logic [3:0] M_BAD  = 4'd14;
+  localparam logic [3:0] M_PACK = 4'd15;
 
   logic [3:0] state;
   logic [31:0] m, n, k, pass;
@@ -63,6 +64,9 @@ module alapeno_matrix
   zadd_t za;
   s64r_t d0, d1, d2;
   logic [255:0] pack_w;
+  logic [255:0] beat;
+  logic [255:0] zbytes;
+  logic [63:0] d1b, d2b;
   logic step_bad;
 
   assign is_proj = (op == AOP_PROJECT);
@@ -80,7 +84,6 @@ module alapeno_matrix
     b_wdata = '0;
     complete = 1'b0;
     fail = 1'b0;
-    ix = (m * n_dim + n) * ew;
     if (kill && (state != M_IDLE)) b_discard = 1'b1;
     else if (state == M_ZA) begin
       b_valid = 1'b1;
@@ -108,21 +111,13 @@ module alapeno_matrix
       b_we = 1'b1;
       b_shadow = 1'b1;
       b_size = ew[6:0];
-      if (is_proj && (pass == 32'd1)) begin
+      if (is_proj && (pass == 32'd1))
         b_addr = ptr_b + (m * ldb) + (n * 32'd8);
-        ix = 32'd65536 + (m * n_dim + n) * 32'd8;
-      end else if (is_proj) begin
+      else if (is_proj)
         b_addr = ptr_c + (m * ldc) + (n * 32'd8);
-        ix = (m * n_dim + n) * 32'd8;
-      end else begin
+      else
         b_addr = ptr_c + (m * ldc) + (n * ew);
-        ix = (m * n_dim + n) * ew;
-      end
-      pack_w = '0;
-      for (bi = 0; bi < 32; bi = bi + 1) begin
-        if (bi < ew) pack_w[(bi * 8) +: 8] = obuf[ix + bi[31:0]];
-      end
-      b_wdata = pack_w;
+      b_wdata = beat;
     end else if (state == M_PUB) begin
       b_publish = 1'b1;
       complete = 1'b1;
@@ -146,6 +141,7 @@ module alapeno_matrix
       hold_j <= 64'h0;
       fres <= 64'h0;
       accz <= '0;
+      beat <= '0;
     end else if (kill) begin
       state <= M_IDLE;
     end else begin
@@ -158,7 +154,8 @@ module alapeno_matrix
             pass <= 32'h0;
             fres <= 64'h0;
             accz <= '0;
-            if ((m_dim == 32'h0) || (n_dim == 32'h0)) state <= M_PUB;
+            if (is_proj && field_mode) state <= M_BAD;
+            else if ((m_dim == 32'h0) || (n_dim == 32'h0)) state <= M_PUB;
             else if (is_proj) state <= M_RE;
             else if (k_dim == 32'h0) state <= M_ZEL;
             else state <= M_ZA;
@@ -218,8 +215,9 @@ module alapeno_matrix
                   for (bi = 0; bi < 8; bi = bi + 1)
                     obuf[ix + bi[31:0]] <= pmod[(bi * 8) +: 8];
                 end else begin
+                  zbytes = za.sum;
                   for (bi = 0; bi < 32; bi = bi + 1)
-                    obuf[ix + bi[31:0]] <= za.sum[(bi * 8) +: 8];
+                    obuf[ix + bi[31:0]] <= zbytes[(bi * 8) +: 8];
                 end
                 k <= 32'h0;
                 fres <= 64'h0;
@@ -228,7 +226,7 @@ module alapeno_matrix
                   n <= 32'h0;
                   if ((m + 32'd1) == m_dim) begin
                     m <= 32'h0;
-                    state <= M_SH;
+                    state <= M_PACK;
                   end else begin
                     m <= m + 32'd1;
                     state <= M_ZA;
@@ -252,7 +250,7 @@ module alapeno_matrix
             n <= 32'h0;
             if ((m + 32'd1) == m_dim) begin
               m <= 32'h0;
-              state <= M_SH;
+              state <= M_PACK;
             end else m <= m + 32'd1;
           end else n <= n + 32'd1;
         end
@@ -275,30 +273,51 @@ module alapeno_matrix
           if (!d0.ok || !d1.ok || !d2.ok) state <= M_BAD;
           else begin
             ix = (m * n_dim + n) * 32'd8;
+            d1b = d1.val;
+            d2b = d2.val;
             for (bi = 0; bi < 8; bi = bi + 1) begin
-              obuf[ix + bi[31:0]] <= d1.val[(bi * 8) +: 8];
-              obuf[32'd65536 + ix + bi[31:0]] <= d2.val[(bi * 8) +: 8];
+              obuf[ix + bi[31:0]] <= d1b[(bi * 8) +: 8];
+              obuf[32'd65536 + ix + bi[31:0]] <= d2b[(bi * 8) +: 8];
             end
             if ((n + 32'd1) == n_dim) begin
               n <= 32'h0;
               if ((m + 32'd1) == m_dim) begin
                 m <= 32'h0;
                 pass <= 32'h0;
-                state <= M_SH;
+                state <= M_PACK;
               end else m <= m + 32'd1;
             end else n <= n + 32'd1;
             if (!((n + 32'd1) == n_dim && (m + 32'd1) == m_dim)) state <= M_RE;
           end
+        end
+        M_PACK: begin
+          pack_w = '0;
+          if (is_proj && (pass == 32'd1)) ix = 32'd65536 + (m * n_dim + n) * 32'd8;
+          else if (is_proj) ix = (m * n_dim + n) * 32'd8;
+          else ix = (m * n_dim + n) * ew;
+          for (bi = 0; bi < 32; bi = bi + 1) begin
+            if (bi < ew) pack_w[(bi * 8) +: 8] = obuf[ix + bi[31:0]];
+          end
+          beat <= pack_w;
+          state <= M_SH;
         end
         M_SH: begin
           if ((n + 32'd1) == n_dim) begin
             n <= 32'h0;
             if ((m + 32'd1) == m_dim) begin
               m <= 32'h0;
-              if (is_proj && (pass == 32'd0)) pass <= 32'd1;
-              else state <= M_PUB;
-            end else m <= m + 32'd1;
-          end else n <= n + 32'd1;
+              if (is_proj && (pass == 32'd0)) begin
+                pass <= 32'd1;
+                state <= M_PACK;
+              end else state <= M_PUB;
+            end else begin
+              m <= m + 32'd1;
+              state <= M_PACK;
+            end
+          end else begin
+            n <= n + 32'd1;
+            state <= M_PACK;
+          end
         end
         M_PUB: state <= M_IDLE;
         M_BAD: state <= M_IDLE;

@@ -92,43 +92,43 @@ module alapeno_mem
   logic [255:0] a_next, b_next;
   logic hit_conflict;
 
-  always_comb begin
-    a_next = '0;
-    b_next = '0;
-    hit_conflict = 1'b0;
-    for (k = 0; k < 32; k = k + 1) begin
-      if (k < a_size) a_next[(k * 8) +: 8] = visible_byte(a_addr + k[31:0]);
-      if (k < b_size) b_next[(k * 8) +: 8] = visible_byte(b_addr + k[31:0]);
-    end
-    if (a_valid && a_we && b_valid && b_we && !b_shadow) begin
-      for (k = 0; k < 32; k = k + 1) begin
-        if (k < a_size) begin
-          ba = a_addr + k[31:0];
-          if (sram_hit(ba) && range_hit(ba, b_addr, b_size)) hit_conflict = 1'b1;
-        end
-      end
-    end
-    if (b_publish && a_valid && a_we) begin
-      for (k = 0; k < 32; k = k + 1) begin
-        if (k < a_size) begin
-          ba = a_addr + k[31:0];
-          if (sram_hit(ba) && dirty[ba[18:0]]) hit_conflict = 1'b1;
-        end
-      end
-    end
-  end
-
   always_ff @(posedge clk) begin
     if (rst) begin
       a_rdata <= '0;
       b_rdata <= '0;
       conflict <= 1'b0;
+      a_next = '0;
+      b_next = '0;
+      hit_conflict = 1'b0;
       for (i = 0; i < 524288; i = i + 1) begin
         sram[i] <= 8'h00;
         shadow[i] <= 8'h00;
         dirty[i] <= 1'b0;
       end
     end else begin
+      a_next = '0;
+      b_next = '0;
+      hit_conflict = 1'b0;
+      for (k = 0; k < 32; k = k + 1) begin
+        if (k < a_size) a_next[(k * 8) +: 8] = visible_byte(a_addr + k[31:0]);
+        if (k < b_size) b_next[(k * 8) +: 8] = visible_byte(b_addr + k[31:0]);
+      end
+      if (a_valid && a_we && b_valid && b_we && !b_shadow) begin
+        for (k = 0; k < 32; k = k + 1) begin
+          if (k < a_size) begin
+            ba = a_addr + k[31:0];
+            if (sram_hit(ba) && range_hit(ba, b_addr, b_size)) hit_conflict = 1'b1;
+          end
+        end
+      end
+      if (b_publish && a_valid && a_we) begin
+        for (k = 0; k < 32; k = k + 1) begin
+          if (k < a_size) begin
+            ba = a_addr + k[31:0];
+            if (sram_hit(ba) && dirty[ba[18:0]]) hit_conflict = 1'b1;
+          end
+        end
+      end
       conflict <= hit_conflict;
       if (a_valid && !a_we) a_rdata <= a_next;
       if (b_valid && !b_we && !b_publish) b_rdata <= b_next;

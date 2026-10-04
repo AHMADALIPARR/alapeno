@@ -45,7 +45,7 @@ module alapeno_vector
   integer bi;
   s64r_t sr;
   zadd_t za;
-  logic [63:0] elem, other, outv;
+  logic [63:0] elem, other, outv, srval;
   logic bad_elem;
   logic [31:0] ew;
   logic red_sum, red_mm, vec_op;
@@ -129,6 +129,7 @@ module alapeno_vector
             saw <= 1'b0;
             if (vec_op && (vl == 32'h0)) state <= V_PUB;
             else if (red_sum && (vl == 32'h0)) state <= V_SH;
+            else if (red_mm && (vl == 32'h0)) state <= V_BAD;
             else state <= V_RDA;
           end
         end
@@ -183,8 +184,9 @@ module alapeno_vector
             else sr = s64_sub(hold_a, other);
             if (!sr.ok) state <= V_BAD;
             else begin
+              srval = sr.val;
               for (bi = 0; bi < 8; bi = bi + 1)
-                obuf[(idx * 8) + bi[31:0]] <= sr.val[(bi * 8) +: 8];
+                obuf[(idx * 8) + bi[31:0]] <= srval[(bi * 8) +: 8];
               if ((idx + 32'd1) == vl) begin sh <= 32'h0; state <= V_SH; end
               else begin idx <= idx + 32'd1; state <= V_RDA; end
             end
