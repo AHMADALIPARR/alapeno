@@ -7,7 +7,7 @@ ASIC work are recorded in [verification/STATUS.md](verification/STATUS.md).
 
 ## Build and verification
 
-Install a C compiler, GNU Make, Icarus Verilog, and Yosys with the `slang`
+Install a C compiler, GNU Make, Python 3, ripgrep, Icarus Verilog, and Yosys with the `slang`
 frontend (the OSS CAD Suite supplies both RTL tools). Why3 1.8.0 with Z3 4.13.3
 and ngspice are required for their separate targets. Add the tools to `PATH`
 and run `why3 config detect` to register the installed Z3 prover.
@@ -17,6 +17,7 @@ make test        # strict assembler build, image comparison, 13 RTL benches
 make synth       # whole alapeno_top, generic logic and explicit memories
 make synth-tile  # frozen tile controller with the same synthesis flow
 make gate-test   # synthesize the tile, then compare its netlist with RTL
+make gate-project # synthesize the full top, then check its PROJECT netlist
 make proofs      # all runnable Why3 goals; ISA predicates type-check only
 make physical    # three illustrative transient decks, not PDK verification
 ```

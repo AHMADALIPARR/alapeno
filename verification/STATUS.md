@@ -24,6 +24,11 @@ The historical HARDWARE_V1 report is not the status of these changes.
   the existing prototype's semantics while making elaboration tractable.
 - The frozen tile's synthesized generic netlist matches RTL every cycle and
   all 512 result bytes match an independent integer reference.
+- A matrix preflight extracted from the whole-top word-level checkpoint maps
+  to 317,343 generic cells with zero check errors. Its synthesized PROJECT
+  datapath passes the 1x1 and strided 2x2 results, overflow discard and capacity
+  rejection checks against the same independent constants as the RTL bench.
+  This is a standalone matrix check; final whole-top mapping is still running.
 - All 168 emitted Why3 goals are Valid with Why3 1.8.0 / Z3 4.13.3: compiler
   121, ISA checks 13, tile 12, accelerator 5, memory 14 and arithmetic 3.
   `why3/isa.mlw` has predicates but no goals; it only type-checks.
