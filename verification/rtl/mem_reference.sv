@@ -1,3 +1,4 @@
+// Frozen baseline for differential storage verification (288abae).
 // SPDX-License-Identifier: AGPL-3.0-only
 // ROM (external image) and one SRAM window. Port A is the core. Port B is
 // the accelerator and the DMA. Reads return on the following clock. A write
@@ -7,7 +8,7 @@
 // Storage is the first 1536 bytes of the window (indices 0..1535). A higher
 // offset misses and does not wrap. 0x10000400 is byte 1024 and still fits.
 
-module alapeno_mem
+module mem_reference
   import alapeno_pkg::*;
 (
   input  logic         clk,
@@ -39,9 +40,9 @@ module alapeno_mem
   localparam int SRAM_BYTES = 1536;
 
   logic [7:0] rom [0:65535];
-  logic [SRAM_BYTES-1:0][7:0] sram;
-  logic [SRAM_BYTES-1:0][7:0] shadow;
-  logic [SRAM_BYTES-1:0] dirty;
+  logic [7:0] sram [0:SRAM_BYTES-1];
+  logic [7:0] shadow [0:SRAM_BYTES-1];
+  logic       dirty [0:SRAM_BYTES-1];
 
   function automatic logic sram_hit(input logic [31:0] a);
     sram_hit = (a[31:19] == 13'h0200);
@@ -79,11 +80,6 @@ module alapeno_mem
     end
   endfunction
 
-  function automatic logic store_hit(input logic [31:0] addr, input logic [31:0] base, input logic [6:0] sz);
-    // The bus has 32 lanes; match the original lane loop for oversized sizes.
-    store_hit = range_hit(addr, base, sz) && ((addr - base) < 32'd32);
-  endfunction
-
   function automatic logic [7:0] visible_byte(input logic [31:0] addr);
     logic [7:0] b;
     logic [10:0] ix;
@@ -103,10 +99,10 @@ module alapeno_mem
     end
   endfunction
 
+  integer i;
   integer k;
   logic [31:0] ba, bb;
-  logic [4:0] a_off, b_off;
-  logic [255:0] a_bank, b_bank;
+  logic [10:0] ix;
   logic [255:0] a_next, b_next;
   logic hit_conflict;
 
@@ -118,41 +114,31 @@ module alapeno_mem
       a_next = '0;
       b_next = '0;
       hit_conflict = 1'b0;
-      a_bank = '0;
-      b_bank = '0;
+      for (i = 0; i < SRAM_BYTES; i = i + 1) begin
+        sram[i] <= 8'h00;
+        shadow[i] <= 8'h00;
+        dirty[i] <= 1'b0;
+      end
     end else begin
       a_next = '0;
       b_next = '0;
       hit_conflict = 1'b0;
-      a_bank = '0;
-      b_bank = '0;
-      // Each of 32 byte banks needs only one read per bus. Construct the
-      // low address bits as constants, then rotate bank order into lane order.
-      // This avoids 32 independent multiplexers over the entire SRAM array.
       for (k = 0; k < 32; k = k + 1) begin
-        a_off = 5'(k) - a_addr[4:0];
-        b_off = 5'(k) - b_addr[4:0];
-        ba = {a_addr[31:5] + 27'(5'(k) < a_addr[4:0]), 5'(k)};
-        bb = {b_addr[31:5] + 27'(5'(k) < b_addr[4:0]), 5'(k)};
-        if (a_off < a_size) a_bank[(k * 8) +: 8] = visible_byte(ba);
-        if (b_off < b_size) b_bank[(k * 8) +: 8] = visible_byte(bb);
+        if (k < a_size) a_next[(k * 8) +: 8] = visible_byte(a_addr + k[31:0]);
+        if (k < b_size) b_next[(k * 8) +: 8] = visible_byte(b_addr + k[31:0]);
       end
-      a_next = {a_bank, a_bank} >> (a_addr[4:0] * 8);
-      b_next = {b_bank, b_bank} >> (b_addr[4:0] * 8);
       if (a_valid && a_we && b_valid && b_we && !b_shadow) begin
         for (k = 0; k < 32; k = k + 1) begin
-          a_off = 5'(k) - a_addr[4:0];
-          if (a_off < a_size) begin
-            ba = {a_addr[31:5] + 27'(5'(k) < a_addr[4:0]), 5'(k)};
+          if (k < a_size) begin
+            ba = a_addr + k[31:0];
             if (sram_stored(ba) && range_hit(ba, b_addr, b_size)) hit_conflict = 1'b1;
           end
         end
       end
       if (b_publish && a_valid && a_we) begin
         for (k = 0; k < 32; k = k + 1) begin
-          a_off = 5'(k) - a_addr[4:0];
-          if (a_off < a_size) begin
-            ba = {a_addr[31:5] + 27'(5'(k) < a_addr[4:0]), 5'(k)};
+          if (k < a_size) begin
+            ba = a_addr + k[31:0];
             if (sram_stored(ba) && dirty[sram_idx(ba)]) hit_conflict = 1'b1;
           end
         end
@@ -161,39 +147,53 @@ module alapeno_mem
       if (a_valid && !a_we) a_rdata <= a_next;
       if (b_valid && !b_we && !b_publish) b_rdata <= b_next;
 
-    end
-    if (rom_load_we) rom[rom_load_addr] <= rom_load_wdata;
-  end
+      if (a_valid && a_we) begin
+        for (k = 0; k < 32; k = k + 1) begin
+          if (k < a_size) begin
+            ba = a_addr + k[31:0];
+            if (sram_stored(ba)) sram[sram_idx(ba)] <= a_wdata[(k * 8) +: 8];
+          end
+        end
+      end
 
-  // Atomic publication and reset require registers, not a single-write SRAM.
-  // One process per byte states the winning write directly; this avoids
-  // thousands of inferred memory ports and their priority cross-product.
-  for (genvar byte_ix = 0; byte_ix < SRAM_BYTES; byte_ix = byte_ix + 1) begin : g_byte
-    localparam logic [31:0] BYTE_ADDR = SRAM_LO + byte_ix;
-    always_ff @(posedge clk) begin
-      if (rst) begin
-        sram[byte_ix] <= 8'h00;
-        shadow[byte_ix] <= 8'h00;
-        dirty[byte_ix] <= 1'b0;
-      end else begin
-        if (a_valid && a_we && (store_hit(BYTE_ADDR, a_addr, a_size) ||
-            (!b_discard && b_publish && dirty[byte_ix] && range_hit(BYTE_ADDR, a_addr, a_size))))
-          sram[byte_ix] <= lane_byte(a_wdata, BYTE_ADDR, a_addr);
-        else if (!b_discard && b_publish && dirty[byte_ix])
-          sram[byte_ix] <= shadow[byte_ix];
-        else if (b_valid && b_we && !b_shadow && !b_publish && !b_discard &&
-                 store_hit(BYTE_ADDR, b_addr, b_size) &&
-                 !(a_valid && a_we && range_hit(BYTE_ADDR, a_addr, a_size)))
-          sram[byte_ix] <= lane_byte(b_wdata, BYTE_ADDR, b_addr);
+      if (b_valid && b_we && b_shadow && !b_publish && !b_discard) begin
+        for (k = 0; k < 32; k = k + 1) begin
+          if (k < b_size) begin
+            bb = b_addr + k[31:0];
+            if (sram_stored(bb)) begin
+              ix = sram_idx(bb);
+              shadow[ix] <= b_wdata[(k * 8) +: 8];
+              dirty[ix] <= 1'b1;
+            end
+          end
+        end
+      end else if (b_valid && b_we && !b_shadow && !b_publish && !b_discard) begin
+        for (k = 0; k < 32; k = k + 1) begin
+          if (k < b_size) begin
+            bb = b_addr + k[31:0];
+            if (sram_stored(bb) && !(a_valid && a_we && range_hit(bb, a_addr, a_size)))
+              sram[sram_idx(bb)] <= b_wdata[(k * 8) +: 8];
+          end
+        end
+      end
 
-        if (b_valid && b_we && b_shadow && !b_publish && !b_discard &&
-            store_hit(BYTE_ADDR, b_addr, b_size))
-          shadow[byte_ix] <= lane_byte(b_wdata, BYTE_ADDR, b_addr);
-        if (b_discard || b_publish) dirty[byte_ix] <= 1'b0;
-        else if (b_valid && b_we && b_shadow && store_hit(BYTE_ADDR, b_addr, b_size))
-          dirty[byte_ix] <= 1'b1;
+      if (b_discard) begin
+        for (i = 0; i < SRAM_BYTES; i = i + 1) dirty[i] <= 1'b0;
+      end else if (b_publish) begin
+        for (i = 0; i < SRAM_BYTES; i = i + 1) begin
+          if (dirty[i]) begin
+            ba = SRAM_LO + i[31:0];
+            if (a_valid && a_we && range_hit(ba, a_addr, a_size)) begin
+              sram[i] <= lane_byte(a_wdata, ba, a_addr);
+            end else begin
+              sram[i] <= shadow[i];
+            end
+            dirty[i] <= 1'b0;
+          end
+        end
       end
     end
+    if (rom_load_we) rom[rom_load_addr] <= rom_load_wdata;
   end
 
 endmodule

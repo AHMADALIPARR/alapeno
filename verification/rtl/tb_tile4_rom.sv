@@ -64,7 +64,7 @@ module tb_tile4_rom;
     rst = 1'b1;
     repeat (2) tick;
 
-    fd = $fopen("/workspace/alapeno/verification/rtl/tile4.bin", "rb");
+    fd = $fopen("tile4.bin", "rb");
     if (fd == 0) begin
       $display("FAIL could not open tile4.bin");
       $fatal(1, "FAIL");

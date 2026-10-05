@@ -1,0 +1,99 @@
+288abae9a50e3fc19d9f2148ed18ae78eb37527a
+ M compiler/alapeno_as.c
+ M rtl/core/alapeno_pkg.sv
+ M rtl/matrix/alapeno_matrix.sv
+ M rtl/memory/alapeno_mem.sv
+ M verification/HARDWARE_V1.md
+ M verification/physical/bitcell_hold.sp
+ M verification/physical/fa_tran.sp
+ M verification/physical/inv_tran.sp
+ M verification/rtl/tb_mac_ref.sv
+ M verification/rtl/tb_tile4_rom.sv
+?? .gitignore
+?? Makefile
+?? scripts/
+?? verification/rtl/mem_reference.sv
+?? verification/rtl/tb_geom_overlap.sv
+?? verification/rtl/tb_mem_equiv.sv
+?? verification/rtl/tb_project_capacity.sv
+?? verification/rtl/tb_rect_bounds.sv
+7da29c4c8abb8eae16a2f9a77e26c8463a20a1bbf6a4c2daecffe8c0551c4d3b  rtl/core/alapeno_pkg.sv
+de1822df616808792890bc65953fa8e4ae543e0b638961a41984c487c7c57ea3  rtl/core/alapeno_core.sv
+72fe2e47585012051b8ce093038937d4b5d8ef585b5464d63ba951b09a1fa8ee  rtl/mac/alapeno_mac.sv
+6f9fb9516a827f86aa876e95dd0a6dd8669b0c2ad00e5e51fa108d65622a5450  rtl/matrix/alapeno_matrix.sv
+4c75ca487c2a01916ed8458053a85ca14f79d245d4d03422440e795d84d3ac01  rtl/vector/alapeno_vector.sv
+fda9bfa9ff9b35d240d25bb16b7c18db2cb701cd34626458726025e66124b05b  rtl/matrix/alapeno_accel.sv
+afd5e25510492eb8e55476d77bc3f239802548f65ce5d014fd3c35644c39931b  rtl/matrix/alapeno_tile_ctrl.sv
+5ed621aa80dbbb037754328e83f8c44f11f695b4494e67dc5e0888af6c6f6145  rtl/dma/alapeno_dma.sv
+9ef709a23528e483961f37ea272cb6e0b7882bfa2e139a578fd6e9e79d8bf68e  rtl/memory/alapeno_mem.sv
+176a22af8686977c90639119e7a7788de153aff5540e20fe08b748193d0f31a6  rtl/alapeno_top.sv
+c3ef63aa02f1754abb956a14835f31a16a9c728dafbbf24e50fc142849e1b0d1  compiler/alapeno_as.c
+303cf0abb0fb211b2a1c3dde9a55f61c51e482485d45ca74751aea148381f626  compiler/tile4.s
+1bafd314151c3bca9f349427d5ecfde05414607e2635eb5cbe656704085f568f  scripts/common.sh
+296642e43c36bf56d8ce58a8244a84f0444c9d352313e1262263b2df1a53dd8f  scripts/physical.sh
+aefde29d868c6fbb27c04a5d111551332f5de5497a45d27dfd7a7d77d688b5ba  scripts/proofs.sh
+38b1165a0cdf2e8247a1aa14dd1f2905569e619cd2b9bc7fc5465484661efa5e  scripts/regress.sh
+ec70605595aaeebbb23e9fa5bc12fae36744088f9165ceac07adb02a494c2c8e  scripts/synth.sh
+286a1f28661a6e4ccbd5b0554d57695f776731812386a9f8988f770d86215fd0  compiler/compile.mlw
+6c84980eb8d99814411715e7e71f1603fd90ab4db62a11e0dc53a0f4f55982a0  why3/accelerator.mlw
+e0d090ee0756e47a478b93ba2fbfa8db0e1d0072168ff8a0777acfdd542b9134  why3/arithmetic.mlw
+6bce694e01eda2b09de7d35c35ad9047060c9deb563723318b770fb964154f00  why3/isa.mlw
+2eeee3cc6ae6ccdcbed52d6ced9cd6ccf9936f8fd8a2de2bd12588f2d00cd6ea  why3/memory.mlw
+20e6385415fd46f4975b754096aa78d6a5ec9fd8cbd3b8ee453b636cd65735f7  why3/tile.mlw
+9fdd74b8ef1100d99828808813aee44568a19c3a062cc2db9e592cd3ab3d2a02  verification/isa/isa_check.mlw
+Why3 platform, version 1.8.0
++ /tmp/why3 -C /tmp/alapeno-why3.conf prove -L compiler -L why3 -P Z3,4.13.3 -a split_vc -t 10 verification/isa/isa_check.mlw
+File "verification/isa/isa_check.mlw", line 14, characters 6-46:
+Goal x0_after_add.
+Prover result is: Valid (0.02s, 73123 steps).
+
+File "verification/isa/isa_check.mlw", line 15, characters 6-42:
+Goal x0_after_add.
+Prover result is: Valid (0.01s, 73332 steps).
+
+File "verification/isa/isa_check.mlw", line 16, characters 6-46:
+Goal x0_after_add.
+Prover result is: Valid (0.02s, 73066 steps).
+
+File "verification/isa/isa_check.mlw", line 23, characters 6-48:
+Goal zmac_is_acc_plus_mul.
+Prover result is: Valid (0.02s, 68372 steps).
+
+File "verification/isa/isa_check.mlw", line 24, character 6 to line 25, character 61:
+Goal zmac_is_acc_plus_mul.
+Prover result is: Valid (0.02s, 71609 steps).
+
+File "verification/isa/isa_check.mlw", line 30, characters 6-64:
+Goal modp_neg_one.
+Prover result is: Valid (0.02s, 67141 steps).
+
+File "verification/isa/isa_check.mlw", line 33, character 4 to line 34, character 41:
+Goal compile_zmac_then_halt.
+Prover result is: Valid (0.00s, 6877 steps).
+
+File "verification/isa/isa_check.mlw", line 42, characters 6-56:
+Goal red_two_word_sum.
+Prover result is: Valid (0.02s, 68763 steps).
+
+File "verification/isa/isa_check.mlw", line 48, characters 6-60:
+Goal add_wrap_not_a_trap.
+Prover result is: Valid (0.01s, 67850 steps).
+
+File "verification/isa/isa_check.mlw", line 49, characters 6-69:
+Goal add_wrap_not_a_trap.
+Prover result is: Valid (0.02s, 67945 steps).
+
+File "verification/isa/isa_check.mlw", line 50, characters 6-48:
+Goal add_wrap_not_a_trap.
+Prover result is: Valid (0.01s, 67608 steps).
+
+File "verification/isa/isa_check.mlw", line 51, characters 6-42:
+Goal add_wrap_not_a_trap.
+Prover result is: Valid (0.01s, 67608 steps).
+
+File "verification/isa/isa_check.mlw", line 52, characters 6-48:
+Goal add_wrap_not_a_trap.
+Prover result is: Valid (0.01s, 67792 steps).
+
++ echo 'why3_exit 0'
+why3_exit 0

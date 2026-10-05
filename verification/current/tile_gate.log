@@ -1,0 +1,127 @@
+288abae9a50e3fc19d9f2148ed18ae78eb37527a
+ M README.md
+ M compiler/alapeno_as.c
+ M rtl/core/alapeno_pkg.sv
+ M rtl/matrix/alapeno_matrix.sv
+ M rtl/memory/alapeno_mem.sv
+ M rtl/memory/commit_feasibility.md
+ M rtl/memory/sram_cut.md
+ M verification/HARDWARE_V1.md
+ M verification/physical/bitcell_hold.sp
+ M verification/physical/fa_tran.sp
+ M verification/physical/inv_tran.sp
+ M verification/rtl/tb_mac_ref.sv
+ M verification/rtl/tb_tile4_rom.sv
+?? .gitignore
+?? Makefile
+?? scripts/
+?? verification/STATUS.md
+?? verification/current/
+?? verification/rtl/mem_reference.sv
+?? verification/rtl/tb_geom_overlap.sv
+?? verification/rtl/tb_mem_equiv.sv
+?? verification/rtl/tb_project_capacity.sv
+?? verification/rtl/tb_rect_bounds.sv
+?? verification/rtl/tb_tile_gate.sv
+7da29c4c8abb8eae16a2f9a77e26c8463a20a1bbf6a4c2daecffe8c0551c4d3b  rtl/core/alapeno_pkg.sv
+de1822df616808792890bc65953fa8e4ae543e0b638961a41984c487c7c57ea3  rtl/core/alapeno_core.sv
+72fe2e47585012051b8ce093038937d4b5d8ef585b5464d63ba951b09a1fa8ee  rtl/mac/alapeno_mac.sv
+6f9fb9516a827f86aa876e95dd0a6dd8669b0c2ad00e5e51fa108d65622a5450  rtl/matrix/alapeno_matrix.sv
+4c75ca487c2a01916ed8458053a85ca14f79d245d4d03422440e795d84d3ac01  rtl/vector/alapeno_vector.sv
+fda9bfa9ff9b35d240d25bb16b7c18db2cb701cd34626458726025e66124b05b  rtl/matrix/alapeno_accel.sv
+afd5e25510492eb8e55476d77bc3f239802548f65ce5d014fd3c35644c39931b  rtl/matrix/alapeno_tile_ctrl.sv
+5ed621aa80dbbb037754328e83f8c44f11f695b4494e67dc5e0888af6c6f6145  rtl/dma/alapeno_dma.sv
+c4eaa1617b0a4610efd08ebc4bfa7d1660521afd6208a831e92aaf6b41c23e86  rtl/memory/alapeno_mem.sv
+176a22af8686977c90639119e7a7788de153aff5540e20fe08b748193d0f31a6  rtl/alapeno_top.sv
+c3ef63aa02f1754abb956a14835f31a16a9c728dafbbf24e50fc142849e1b0d1  compiler/alapeno_as.c
+303cf0abb0fb211b2a1c3dde9a55f61c51e482485d45ca74751aea148381f626  compiler/tile4.s
+883b8db5df5e16ed78c1ed624ceea3b9fa6089703ee9a7c394967eafd6ae3f0e  scripts/common.sh
+5aa836fc6ddf48b8dbf362b4c90e9a2d29c8910b6f4a120d4df5944afdebd8ce  scripts/gate-test.sh
+296642e43c36bf56d8ce58a8244a84f0444c9d352313e1262263b2df1a53dd8f  scripts/physical.sh
+aefde29d868c6fbb27c04a5d111551332f5de5497a45d27dfd7a7d77d688b5ba  scripts/proofs.sh
+38b1165a0cdf2e8247a1aa14dd1f2905569e619cd2b9bc7fc5465484661efa5e  scripts/regress.sh
+01067a05e993a5d9ca740886cb901951172d0e2af3ce3422465ac542de9f5227  scripts/synth.sh
+bb4c4fe66ccc8b176c3d8d5ceafc4ba02d1f6b5e7e54d90e05d08f45ea9d5310  scripts/techmap.tcl
+13f68815ea9791af168fb63ce421577a581a5f2679f070c684e1a69aff2d2927  /workspace/alapeno/build/alapeno_tile_ctrl-generic.v
+efe579b3f442c2df3c2773cba037e4902c0e886b50f21e52729ec1420d5454e2  verification/rtl/tb_tile_gate.sv
+Icarus Verilog version 14.0 (devel) (s20260301-510-gcbbc0ebb3-dirty)
+
+Copyright (c) 2000-2026 Stephen Williams (steve@icarus.com)
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+Icarus Verilog Preprocessor version 14.0 (devel) (s20260301-510-gcbbc0ebb3-dirty)
+
+Copyright (c) 1999-2026 Stephen Williams (steve@icarus.com)
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+Icarus Verilog Parser/Elaborator version 14.0 (devel) (s20260301-510-gcbbc0ebb3-dirty)
+
+Copyright (c) 1998-2026 Stephen Williams (steve@icarus.com)
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+ FLAGS DLL vvp.tgt
+vvp.tgt: Icarus Verilog VVP Code Generator 14.0 (devel) (s20260301-510-gcbbc0ebb3-dirty)
+
+Copyright (c) 2001-2026 Stephen Williams (steve@icarus.com)
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
++ iverilog -g2012 -s tb_tile_gate -o /workspace/alapeno/build/tile_gate.vvp rtl/core/alapeno_pkg.sv rtl/matrix/alapeno_matrix.sv rtl/matrix/alapeno_tile_ctrl.sv /workspace/alapeno/build/tile-synth.v verification/rtl/tb_tile_gate.sv
++ echo 'iverilog_exit 0'
+iverilog_exit 0
++ vvp /workspace/alapeno/build/tile_gate.vvp
+PASS GATE TILE: synthesized netlist matches RTL every cycle and all 512 result bytes match integer reference
+verification/rtl/tb_tile_gate.sv:68: $finish called at 2927000 (1ps)
++ echo 'vvp_exit 0'
+vvp_exit 0

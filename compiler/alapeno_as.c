@@ -393,7 +393,7 @@ static void parse_insn_line(char *line, int lineno, int pc) {
   if (ninsns >= MAX_LINES) die("too many instructions");
   ins = &insns[ninsns];
   memset(ins, 0, sizeof(*ins));
-  strncpy(ins->src, line, MAX_LINE - 1);
+  snprintf(ins->src, sizeof(ins->src), "%s", line);
   ins->lineno = lineno;
   ins->pc = pc;
 
@@ -403,7 +403,8 @@ static void parse_insn_line(char *line, int lineno, int pc) {
     *p = '\0';
     p++;
   }
-  strncpy(ins->mnem, mnem, sizeof(ins->mnem) - 1);
+  if (strlen(mnem) >= sizeof(ins->mnem)) diei("mnemonic too long at line %d", lineno);
+  strcpy(ins->mnem, mnem);
   if (classify(ins->mnem, ins) != 0) diei("unknown mnemonic at line %d", lineno);
 
   args = skip_ws(p);

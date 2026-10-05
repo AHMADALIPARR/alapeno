@@ -434,26 +434,48 @@ package alapeno_pkg;
     input logic [31:0] b_base, input logic [31:0] b_stride,
     input logic [31:0] b_rows, input logic [31:0] b_cols, input logic [31:0] b_ew
   );
-    integer ra, rb;
+    integer step;
+    logic [6:0] ra, rb, ar, br;
     logic [63:0] ab, al, bb, bl;
+    logic [32:0] acursor, bcursor, aend, bend;
     logic hit;
     begin
       hit = 1'b0;
-      if ((a_rows != 0) && (a_cols != 0) && (b_rows != 0) && (b_cols != 0)) begin
-        for (ra = 0; ra < 64; ra = ra + 1) begin
-          if (ra < a_rows) begin
-            ab = {32'b0, a_base} + (ra * {32'b0, a_stride});
-            al = {32'b0, a_cols} * {32'b0, a_ew};
-            for (rb = 0; rb < 64; rb = rb + 1) begin
-              if (rb < b_rows) begin
-                bb = {32'b0, b_base} + (rb * {32'b0, b_stride});
-                bl = {32'b0, b_cols} * {32'b0, b_ew};
-                if (((ab >> 32) == 0) && ((bb >> 32) == 0) &&
-                    ((ab + al) <= 64'h0000_0001_0000_0000) &&
-                    ((bb + bl) <= 64'h0000_0001_0000_0000)) begin
-                  if (ranges_overlap(ab, al, bb, bl)) hit = 1'b1;
-                end else hit = 1'b1;
-              end
+      ar = (a_rows > 32'd64) ? 7'd64 : a_rows[6:0];
+      br = (b_rows > 32'd64) ? 7'd64 : b_rows[6:0];
+      al = {32'b0, a_cols} * {32'b0, a_ew};
+      bl = {32'b0, b_cols} * {32'b0, b_ew};
+      ab = {32'b0, a_base};
+      bb = {32'b0, b_base};
+      ra = 0;
+      rb = 0;
+      acursor = {1'b0, a_base};
+      bcursor = {1'b0, b_base};
+      aend = 0;
+      bend = 0;
+      if ((ar != 0) && (a_cols != 0) && (br != 0) && (b_cols != 0)) begin
+        // Preserve fail-closed handling of any out-of-address-space row.
+        // Unsigned strides make the final row the maximum row address.
+        ab = {32'b0, a_base} + ({57'b0, ar - 7'd1} * {32'b0, a_stride});
+        bb = {32'b0, b_base} + ({57'b0, br - 7'd1} * {32'b0, b_stride});
+        if (((ab >> 32) != 0) || ((bb >> 32) != 0) ||
+            ((ab + al) > 64'h0000_0001_0000_0000) ||
+            ((bb + bl) > 64'h0000_0001_0000_0000)) hit = 1'b1;
+        // Merge two sorted interval lists instead of comparing 64 x 64
+        // pairs. Advancing the earlier end cannot skip an intersection.
+        // At most ar + br advances exhaust a list. ranges_overlap keeps
+        // its original 32-bit length semantics (including zero lengths).
+        for (step = 0; step < 128; step = step + 1) begin
+          if (!hit && (ra < ar) && (rb < br) && (al[31:0] != 0) && (bl[31:0] != 0)) begin
+            aend = acursor + {1'b0, al[31:0]};
+            bend = bcursor + {1'b0, bl[31:0]};
+            if ((acursor < bend) && (bcursor < aend)) hit = 1'b1;
+            if (aend <= bend) begin
+              ra = ra + 7'd1;
+              acursor = acursor + {1'b0, a_stride};
+            end else begin
+              rb = rb + 7'd1;
+              bcursor = bcursor + {1'b0, b_stride};
             end
           end
         end
@@ -466,24 +488,27 @@ package alapeno_pkg;
     input logic [31:0] base, input logic [31:0] stride,
     input logic [31:0] rows, input logic [31:0] cols, input logic [31:0] ew
   );
-    integer r, c;
+    logic [6:0] nr, nc;
     logic [63:0] ea, last;
     logic ok;
     begin
       ok = 1'b1;
-      for (r = 0; r < 64; r = r + 1) begin
-        if (r < rows) begin
-          for (c = 0; c < 64; c = c + 1) begin
-            if (c < cols) begin
-              ea = {32'b0, base} + (r * {32'b0, stride}) + (c * {32'b0, ew});
-              last = ea + {32'b0, ew} - 64'd1;
-              if (((ea >> 32) != 0) || ((last >> 32) != 0) ||
-                  (ea < {32'h0, SRAM_LO}) || (last > {32'h0, SRAM_HI})) ok = 1'b0;
-              if ((ew == 32'd32) && ((ea & 64'h1F) != 64'h0)) ok = 1'b0;
-              if ((ew == 32'd8) && ((ea & 64'h7) != 64'h0)) ok = 1'b0;
-            end
-          end
-        end
+      // Unsigned strides and widths make element addresses monotone. The
+      // first address and final byte bound every element. For 8/32-byte
+      // elements, base and (when used) stride alignment imply all alignment.
+      // Preserve the old loop's 64-row/column cap, including empty rectangles.
+      nr = (rows > 32'd64) ? 7'd64 : rows[6:0];
+      nc = (cols > 32'd64) ? 7'd64 : cols[6:0];
+      if ((nr != 0) && (nc != 0)) begin
+        ea = {32'b0, base} + ({57'b0, nr - 7'd1} * {32'b0, stride}) +
+             ({57'b0, nc - 7'd1} * {32'b0, ew});
+        last = ea + {32'b0, ew} - 64'd1;
+        if (((ea >> 32) != 0) || ((last >> 32) != 0) ||
+            (base < SRAM_LO) || (last > {32'h0, SRAM_HI})) ok = 1'b0;
+        if ((ew == 32'd32) && (((base & 32'h1F) != 0) ||
+            ((nr > 1) && ((stride & 32'h1F) != 0)))) ok = 1'b0;
+        if ((ew == 32'd8) && (((base & 32'h7) != 0) ||
+            ((nr > 1) && ((stride & 32'h7) != 0)))) ok = 1'b0;
       end
       rect_in_sram = ok;
     end

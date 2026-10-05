@@ -1,39 +1,32 @@
-# SRAM cut for alapeno_mem
+# SRAM implementation profile
 
-`alapeno_mem` cannot be mapped as written. The arrays are:
+The current `alapeno_mem` stores 1536 bytes (offsets 0 through 1535) of the
+specification's SRAM window `0x10000000 .. 0x1007ffff`. The frozen tile's copy
+starts at offset 1024 and ends at 1535. A 768-byte cut would hold C but would
+not hold this copy. Higher offsets are rejected by `sram_stored`; they do not
+alias low storage.
 
-```systemverilog
-logic [7:0] rom [0:65535];
-logic [7:0] sram [0:524287];
-logic [7:0] shadow [0:524287];
-logic       dirty [0:524287];
-```
+SRAM, shadow bytes and dirty flags are packed register arrays with one process
+per byte. This directly expresses the existing priority: reset, Port A write,
+atomic publication, and direct Port B write. Shadow stores remain invisible;
+abort/discard clears dirty flags without changing SRAM. Publication copies
+all dirty bytes in one cycle, while Port A wins a contest. The ROM remains a
+65536-byte loadable memory.
 
-Yosys `memory` without `-nomap` calls `memory_map`, which converts memories to word-wide DFFs. Reset, discard, and publish also walk all 524288 entries inside `always_ff`:
+The previous implementation generated thousands of inferred write ports from
+whole-array reset and publication plus dynamic multi-lane writes. The current
+register implementation avoids the memory-port priority expansion. It is not
+an SRAM macro mapping and does not implement all 512 KiB of the specification.
 
-```systemverilog
-for (i = 0; i < 524288; i = i + 1) begin
-  sram[i] <= 8'h00;
-  shadow[i] <= 8'h00;
-  dirty[i] <= 1'b0;
-end
-for (i = 0; i < 524288; i = i + 1) dirty[i] <= 1'b0;
-for (i = 0; i < 524288; i = i + 1) begin
-  if (dirty[i]) begin
-    ba = SRAM_LO + i[31:0];
-    if (a_valid && a_we && range_hit(ba, a_addr, a_size))
-      sram[i[18:0]] <= lane_byte(a_wdata, ba, a_addr);
-    else
-      sram[i[18:0]] <= shadow[i[18:0]];
-    dirty[i] <= 1'b0;
-  end
-end
-```
+`tb_mem_equiv.sv` compares all stored bytes, shadow bytes, dirty flags,
+registered read values and conflict signals against the baseline implementation
+for 600 randomized cycles, including publication/discard collisions and sizes
+larger than the 32-lane bus. Run it with `make test`.
 
-The live Yosys is still inside `read_slang`. It was started with `--unroll-limit 4000000`, so slang is unrolling those loops. Hierarchy has not run. This note does not claim a measured kill.
+Reads visit the 32 byte banks once each and rotate the bank-order bus into
+address-order lanes. Each bank selects among 48 stored bytes, instead of each
+lane selecting across all 1536 bytes. This preserves unaligned and crossing
+reads while reducing the multiplexers required by register storage.
 
-The frozen tile (`alapeno_tile_ctrl`) uses SRAM offsets `ptr_a` 0, `ptr_b` `0x80`, `ptr_c` `0x100`, `ldc` 128, and 4 rows. C occupies `4 * 128 = 512` bytes, so the last C byte is `0x100 + 512 - 1 = 767`. The smallest SRAM depth that contains bytes 0 through 767 is 768. That is the cut that would let the unroll finish. It was not re-run in Yosys, because a second Yosys was forbidden while the stuck read holds the machine.
-
-`alapeno_top` also elaborates `alapeno_matrix` with the default `obuf [0:131071]`, which is not in `alapeno_mem`.
-
-Implemented in alapeno_mem.sv as SRAM_BYTES 1536 (indices 0..1535), not 768. The copy at 0x10000400 is byte 1024, and the last copy byte is 1535, so it fits. Reset, discard, and publish walk SRAM_BYTES only. Yosys was not run.
+For current measured synthesis results and remaining ASIC prerequisites,
+see [verification/STATUS.md](../../verification/STATUS.md).

@@ -1,5 +1,11 @@
 # Memory and commit feasibility
 
+This is a historical account of the earlier tile runs and storage layout.
+Current storage uses 1536 bytes of bank-read register arrays, and PROJECT
+stores both results compactly. See [sram_cut.md](sram_cut.md) and
+[verification/STATUS.md](../../verification/STATUS.md) for current verification
+and synthesis results. The older counts below describe their original scripts.
+
 This note is not a new architecture and does not change the tile contract. It quotes the Yosys log already committed at `e5bc05b` as `verification/rtl/logs/yosys_synth.log`. That log does not name a device, and it prints no timing. Nothing here is a claim that a named FPGA or ASIC can implement this RTL.
 
 ## What the log actually ran

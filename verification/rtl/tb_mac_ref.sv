@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Integer vectors for mac_ref. Mismatch calls $error and $finish(1).
+// Integer vectors for mac_ref. Mismatch calls $fatal for a nonzero exit.
 
 module tb_mac_ref;
   reg  [7:0] acc;
@@ -60,9 +60,9 @@ module tb_mac_ref;
 
     if (errors != 0) begin
       $display("mismatches %0d", errors);
-      $finish(1);
+      $fatal(1, "FAIL MAC REF");
     end else begin
-      $display("all integer mac vectors matched");
+      $display("PASS MAC REF: all integer mac vectors matched");
       $finish(0);
     end
   end

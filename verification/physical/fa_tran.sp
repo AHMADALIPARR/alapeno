@@ -1,15 +1,15 @@
 * SPDX-License-Identifier: AGPL-3.0-only
 * Transient sweep of full-adder through 8 input combinations (a,b,cin).
-* License: see /workspace/alapeno/spice/COPYING
+* License: see spice/COPYING
 * Illustrative Level-1 MOSFET cards, not a foundry PDK.
 * Solver aids (cshunt/slow edges) are testbench-only; models keep CGSO=CGDO=0.
-.include /workspace/alapeno/spice/corners/models_tt.inc
-.include /workspace/alapeno/spice/cells/inv.sp
-.include /workspace/alapeno/spice/cells/nand2.sp
-.include /workspace/alapeno/spice/cells/nor2.sp
-.include /workspace/alapeno/spice/cells/and2.sp
-.include /workspace/alapeno/spice/cells/xor2.sp
-.include /workspace/alapeno/spice/cells/fa.sp
+.include spice/corners/models_tt.inc
+.include spice/cells/inv.sp
+.include spice/cells/nand2.sp
+.include spice/cells/nor2.sp
+.include spice/cells/and2.sp
+.include spice/cells/xor2.sp
+.include spice/cells/fa.sp
 
 Vdd vdd 0 DC 1.8
 Vss vss 0 DC 0

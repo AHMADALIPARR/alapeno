@@ -1,3 +1,9 @@
+# Historical report
+
+This document records the earlier V1 snapshot. For current sources, reruns,
+synthesis results and remaining ASIC prerequisites, see [STATUS.md](STATUS.md).
+Statements below about missing logs and unsynthesized RTL describe that snapshot.
+
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <!-- Copyright (C) 2026 Alapeno contributors -->
 

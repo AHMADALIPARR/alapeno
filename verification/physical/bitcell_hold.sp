@@ -1,9 +1,9 @@
 * SPDX-License-Identifier: AGPL-3.0-only
 * 6T bitcell hold: brief write of q high, then hold with wl low.
-* License: see /workspace/alapeno/spice/COPYING
+* License: see spice/COPYING
 * Illustrative Level-1 MOSFET cards, not a foundry PDK.
-.include /workspace/alapeno/spice/corners/models_tt.inc
-.include /workspace/alapeno/spice/sram/bitcell_6t.sp
+.include spice/corners/models_tt.inc
+.include spice/sram/bitcell_6t.sp
 
 Vdd vdd 0 DC 1.8
 Vss vss 0 DC 0

@@ -71,10 +71,16 @@ module alapeno_matrix
   logic [255:0] zbytes;
   logic [63:0] d1b, d2b, jnew;
   logic step_bad;
+  logic [63:0] result_bytes;
+  logic [31:0] project_second;
 
   assign is_proj = (op == AOP_PROJECT);
   assign is_route = (op == AOP_ROUTE);
   assign ew = is_proj ? 32'd8 : (field_mode ? 32'd8 : 32'd32);
+  assign result_bytes = {32'b0, m_dim} * {32'b0, n_dim} *
+                        (is_proj ? 64'd16 : {32'b0, ew});
+  // PROJECT stores two compact matrices, rather than leaving a 64 KiB gap.
+  assign project_second = m_dim * n_dim * 32'd8;
   // ew_sz outside the always_comb so Icarus does not widen the read.
   logic [6:0] ew_sz;
   assign ew_sz = ew[6:0];
@@ -162,6 +168,9 @@ module alapeno_matrix
             accz <= '0;
             if (is_proj && field_mode) state <= M_BAD;
             else if ((m_dim == 32'h0) || (n_dim == 32'h0)) state <= M_PUB;
+            else if ((m_dim > 32'd64) || (n_dim > 32'd64) ||
+                     (!is_proj && (k_dim > 32'd64)) ||
+                     (result_bytes > 64'(OBUF_BYTES))) state <= M_BAD;
             else if (is_proj) state <= M_RE;
             else if (k_dim == 32'h0) state <= M_ZEL;
             else state <= M_ZA;
@@ -284,8 +293,7 @@ module alapeno_matrix
             d2b = d2.val;
             for (bi = 0; bi < 8; bi = bi + 1) begin
               obuf[ix + bi[31:0]] <= d1b[(bi * 8) +: 8];
-              if (OBUF_BYTES > 65536)
-                obuf[32'd65536 + ix + bi[31:0]] <= d2b[(bi * 8) +: 8];
+              obuf[project_second + ix + bi[31:0]] <= d2b[(bi * 8) +: 8];
             end
             if ((n + 32'd1) == n_dim) begin
               n <= 32'h0;
@@ -300,8 +308,8 @@ module alapeno_matrix
         end
         M_PACK: begin
           pack_w = '0;
-          if (is_proj && (pass == 32'd1) && (OBUF_BYTES > 65536))
-            ix = 32'd65536 + (m * n_dim + n) * 32'd8;
+          if (is_proj && (pass == 32'd1))
+            ix = project_second + (m * n_dim + n) * 32'd8;
           else if (is_proj) ix = (m * n_dim + n) * 32'd8;
           else ix = (m * n_dim + n) * ew;
           for (bi = 0; bi < 32; bi = bi + 1) begin
