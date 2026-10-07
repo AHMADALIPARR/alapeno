@@ -1,12 +1,11 @@
-(* Why3 1.8.0 loaded this file. No goal was printed Valid. No proof is claimed. *)
 (* SPDX-License-Identifier: AGPL-3.0-only *)
 (* Copyright (C) 2026 Alapeno contributors *)
 (* The grant is AGPL-3.0-only and there is no MIT license. *)
-(*
+
    Standalone model of the programmer-visible integer ISA.
    Not RISC-V. No float sort. Depends only on int.Int.
    Euclidean division is the predicate `divides` below, not a library import.
-*)
+
 
 module Isa
 
